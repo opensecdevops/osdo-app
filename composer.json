@@ -18,6 +18,7 @@
         "tightenco/ziggy": "^1.0"
     },
     "require-dev": {
+        "cyclonedx/cyclonedx-php-composer": "^4.2",
         "fakerphp/faker": "^1.9.1",
         "laravel/breeze": "^1.25",
         "laravel/pint": "^1.0",
@@ -65,7 +66,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "cyclonedx/cyclonedx-php-composer": true
         }
     },
     "minimum-stability": "stable",
