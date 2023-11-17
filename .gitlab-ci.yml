@@ -22,7 +22,6 @@ composer:
   
   # What to run on the job.
   script:
-      - cd Docker/www
       - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
   artifacts:
   
@@ -33,7 +32,7 @@ composer:
     
     # Define what to output from the job.
     paths:
-      - Docker/www/vendor/
+      - vendor/
   cache:
   
     # The variable CI_COMMIT_REF_SLUG 
@@ -45,7 +44,7 @@ composer:
     
     # Define what to cache.
     paths:
-      - Docker/www/vendor/
+      - vendor/
 
 
 secret_detection:
@@ -92,7 +91,7 @@ sbom_scan_php:
   artifacts:
     expire_in: 1 days
     paths:
-      sbom.json
+      - sbom.json
 
 sbom_scan_node:
   stage: sbom_scan
@@ -106,7 +105,7 @@ sbom_scan_node:
   artifacts:
     expire_in: 1 days
     paths:
-      sbom.json
+      - sbom.json
 
 phpunit:
   stage: test
