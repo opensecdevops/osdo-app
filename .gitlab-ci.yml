@@ -95,7 +95,7 @@ sbom_scan_php:
 
 sbom_scan_node:
   stage: sbom_scan
-  image: node:lts-alpine3.18
+  image: cyclonedx@sha256:8e554804d8064383facf3307564a4cf438682f5774524afbdc4cd3830d7d5358
   before_script:
     npm install -g @cyclonedx/bom
   script:
