@@ -92,7 +92,7 @@ sbom_scan_php:
   artifacts:
     expire_in: 1 days
     paths:
-      sbom.json
+      - sbom.json
 
 sbom_scan_node:
   stage: sbom_scan
@@ -106,7 +106,7 @@ sbom_scan_node:
   artifacts:
     expire_in: 1 days
     paths:
-      sbom.json
+      - sbom.json
 
 phpunit:
   stage: test
