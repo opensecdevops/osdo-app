@@ -1,0 +1,113 @@
+stages:
+  - .pre
+  - preparation
+  - secret_detection
+  - sbom_scan
+  - test
+  - build
+  - build_test
+  - push_image
+  - update_k8s_manifest
+
+variables:
+  DD_NOT_ON_MASTER: "false"
+
+
+
+composer:
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:0ee5a92d04c19d02f5f0cee57407eeb9b0312689b7dc30dda0428be73ef7bcfb
+
+  # The job's stage (build, test or deploy).
+  stage: preparation
+  
+  # What to run on the job.
+  script:
+      - cd Docker/www
+      - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+  artifacts:
+  
+    # (Optional) Give it an expiration date, 
+    # after that period you won't be able to 
+    # download them via the UI anymore.
+    expire_in: 1 month
+    
+    # Define what to output from the job.
+    paths:
+      - Docker/www/vendor/
+  cache:
+  
+    # The variable CI_COMMIT_REF_SLUG 
+    # refers to the slug of the branch.
+    # For example: `master` for the master branch.
+    # We use the `composer` suffix to avoid conflicts with
+    # the `npm` cache that we'll define next.
+    key: ${CI_COMMIT_REF_SLUG}-composer
+    
+    # Define what to cache.
+    paths:
+      - Docker/www/vendor/
+
+
+secret_detection:
+  stage: secret_detection
+  #dependencies: ["defectdojo_create_engagement"]
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 1
+    DD_SCAN_TYPE: "Gitleaks Scan"
+    DD_PRODUCT_NAME: "GitLeaks"
+    DD_SCAN_FILE: "gitleaks-report.json"
+    DD_SCAN_ACTIVE: "true"
+    DD_SCAN_VERIFIED: "false"
+  image: 
+    name: harbor.opensecdevops.com/osdo/gitleak@sha256:d348f3c616c5b51b8e6bb1702484d6f293712be43fc81c3b97793f0886b7f95b
+    entrypoint: [""]
+  script:
+    - gitleaks detect -v --source=$PWD  --report-path=gitleaks-report.json
+  #after_script:
+  #  - |
+  #    if [ $CI_JOB_STATUS == 'failed' ]; then
+  #      bash .gitlab-ci/defectdojo-finding.sh
+  #    fi
+  allow_failure: true
+  artifacts:
+    when: on_failure
+    paths:
+      - gitleaks-report.json
+
+sbom_scan:
+  stage: sbom_scan
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:0ee5a92d04c19d02f5f0cee57407eeb9b0312689b7dc30dda0428be73ef7bcfb
+  dependencies: ['composer']
+  variables:
+    COMPOSER_ALLOW_SUPERUSER: 1
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-composer
+    paths:
+      - Docker/www/vendor/
+  script:
+    - cd Docker/www
+    - composer CycloneDX:make-sbom --output-file=sbom.json --output-format=json
+    - sh ../.gitlab-ci/dependency-track.sh 
+  allow_failure: true
+  artifacts:
+    expire_in: 1 days
+    paths:
+      - Docker/www/sbom.json
+
+phpunit:
+  stage: test
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:0ee5a92d04c19d02f5f0cee57407eeb9b0312689b7dc30dda0428be73ef7bcfb
+  dependencies: ['composer']
+  variables:
+    XDEBUG_MODE: coverage
+  before_script:
+  script:
+    - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
+  artifacts:
+    paths:
+      - phpunit-report.xml
+    reports:
+      junit: phpunit-report.xml
+    expire_in: 30 min
+  allow_failure: true
