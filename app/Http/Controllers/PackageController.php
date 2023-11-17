@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Http\Requests\StorePackage;
+use App\Http\Requests\StorePackageRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
-use Gitlab;
+use GrahamCampbell\GitLab\Facades\GitLab;
+use Illuminate\Support\Facades\Storage;
 
 class PackageController extends Controller
 {
@@ -17,11 +18,14 @@ class PackageController extends Controller
      */
     public function index()
     {
-        $packages = Package::paginate(10)->through(fn ($package) => [
+        $user = Auth::user();
+
+        $packages = $user->packages()->paginate(10)->through(fn ($package) => [
             'id' => $package->id,
             'name' => $package->name,
             'description' => $package->description,
-            'version' => $package->version,
+            'type' => $package->type === 1 ? 'Infrastructure' : 'CI/CD',
+            'version' => $package->versions()->latest()->first() ? $package->versions()->latest()->first()->version : '',
         ]);
 
         return Inertia::render('Packages/Index', [
@@ -29,53 +33,51 @@ class PackageController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+
+    public function create(Request $request)
     {
-        return Inertia::render('Packages/Create');
-    }
-
-    public function importCreate() {
-
-
         $user = Auth::user();
 
-        $service = $user->services()->where('service_id', 1)->first();
+        return Inertia::render('Packages/Create', [
+            'services' => $user->services()->get()->map(fn ($service) => [
+                'id' => $service->id,
+                'label' => $service->service,
+            ]),
+            'projects' => Inertia::lazy(function () use ($user, $request) {
+                $serviceSelected = $request->input('params.service', '');
+                $service = $user->services()->where('service_id', $serviceSelected)->first();
 
-        $token = Crypt::decryptString($service->pivot->token);
+                $token = Crypt::decryptString($service->pivot->token);
+                config(['gitlab.connections.main.token' => $token]);
+        
+                $search = $request->input('params.search', '');
 
-        $client = new Gitlab\Client();
-        $client->authenticate($service->pivot->token, 'http_token');
+                try {
+                    return GitLab::projects()->all(['owned' => true, 'search' => $search, 'visibility' => 'public']);
+                } catch (\Throwable $th) {
 
-        $projects = $client->projects->all();
-
-        return Inertia::render('Packages/Import', [
-            'projects' => $projects,
+                }
+            }),
         ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePackage $request)
+    public function store(StorePackageRequest $request)
     {
-        $file_path = '';
-        dump($request->hasFile('package'));
-        if ($request->hasFile('package')) {
-            $file_path = $request->file('package')->store('packages');
-        }
-    
-        return to_route('packages.index');
-    
-    }
+        $package = new Package();
 
-    public function importStore(ImportPackage $request)
-    {
+        $package->repository_id = $request->id;
+        $package->user_id = Auth::id();
+        $package->service_id = $request->service;
+        $package->repository = $request->repository;      
+        $package->type = $request->type;
+        $package->name = $request->name;
 
+        $package->save();
 
-        
+        return to_route('packages.index'); 
     }
 
     /**
@@ -105,9 +107,27 @@ class PackageController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Package $package)
+    public function destroy(Request $request, $packageId)
     {
-        //
+        //Package delete only by owner
+        $package = Package::find($packageId);
+
+        if (!$package) {
+            return response()->json(['message' => 'Package not found'], 404);
+        }
+
+        if ($package->user_id != Auth::id()) {
+            return response()->json(['message' => 'You can\'t pass!!!!'], 403);
+        }
+
+        $service = $package->service()->first();
+
+
+        $folderPackage = sprintf('packages/%s/%s', $service->service, $package->name);
+
+        Storage::deleteDirectory($folderPackage);
+        $package->delete();
+
+        return to_route('packages.index');
     }
-    
 }

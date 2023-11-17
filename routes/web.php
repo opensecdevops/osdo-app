@@ -38,10 +38,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/services/{id}', [ServicesController::class, 'destroy'])->name('service.destroy');
 
     Route::get('/packages', [PackageController::class, 'index'])->name('packages.index');
+    Route::delete('/packages/{id}', [PackageController::class, 'destroy'])->name('packages.destroy');
     Route::get('/packages/create', [PackageController::class, 'create'])->name('packages.create');
     Route::post('/packages/store', [PackageController::class, 'store'])->name('packages.store');
-    Route::get('/packages/import', [PackageController::class, 'importCreate'])->name('packages.import.create');
-    Route::post('/packages/import', [PackageController::class, 'importStore'])->name('packages.import.store');
 });
 
 
@@ -51,6 +50,11 @@ Route::get('/generator', [GeneratorController::class, 'index'])->name('generator
 Route::get('/generator/{vendor}/{package}', [GeneratorController::class, 'show'])->name('generator.show');
 Route::get('/generator/{vendor}/{package}/generate/{id}', [GeneratorController::class, 'create'])->name('generator.create');
 Route::post('/generator/{vendor}/{package}/generate/{id}', [GeneratorController::class, 'generate'])->name('generator.generate');
+
+
+Route::get('/error/404', function () {
+  abort(404);
+});
 
 
 require __DIR__.'/auth.php';

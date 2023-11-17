@@ -30,18 +30,10 @@ class ServicesController extends Controller
         ]);
 
 
-      /*  $servicesUser = $services->select('services.id', 'services.service')->paginate(10)->get();
-
-
-        $packages = Package::paginate(10)->through(fn ($package) => [
-            'id' => $package->id,
-            'name' => $package->name,
-            'description' => $package->description,
-            'version' => $package->version,
-        ]);*/
-
-      
-        $services = Service::all();
+        $services = Service::all()->map(fn ($service) => [
+            'id' => $service->id,
+            'service' => $service->service
+        ]);
 
         return Inertia::render('Profile/Services', [
             'servicesUser' => $servicesUser,
@@ -49,7 +41,8 @@ class ServicesController extends Controller
         ]);
     }
 
-    public function store(StoreServiceRequests $request) {
+    public function store(StoreServiceRequests $request)
+    {
 
         $user = Auth::user();
 
@@ -59,8 +52,7 @@ class ServicesController extends Controller
 
         $user->services()->attach($serviceId, ['token' => $token]);
 
-        to_route('service.edit');
-        
+        return to_route('service.edit');
     }
 
 
@@ -73,7 +65,6 @@ class ServicesController extends Controller
 
         $user->services()->detach($request->id);
 
-        to_route('service.edit');
-
+        return to_route('service.edit');
     }
 }

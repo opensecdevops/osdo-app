@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StorePackage extends FormRequest
+class StorePackageRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,16 +22,10 @@ class StorePackage extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
-            'package' => 'required|file|mimes:zip|max:10000',
-            'version' => 'regex:/[a-zA-Z]?\d{1,2}\.\d{1,2}\.\d{1,3}/s'
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'version.regex' => 'The versión format is invalid XX.XX.XX',
+            'id' => 'required|integer',
+            'service' => 'required|integer|exists:services,id',
+            'type' => 'required|integer|between:1,2',
+            'repository' => 'required|string|active_url',
         ];
     }
 }

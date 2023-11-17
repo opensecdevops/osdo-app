@@ -9,6 +9,8 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\View;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+//use App\Utils\TemplateEngine;
 
 class GeneratorController extends Controller
 {
@@ -17,14 +19,22 @@ class GeneratorController extends Controller
      */
     public function index()
     {
-        $packages = Package::paginate(10)->through(fn ($package) => [
-            'id' => $package->id,
-            'name' => $package->name,
-            'description' => $package->description,
-            'type' => $package->type === 1 ? 'Infrastructure' : 'CI/CD',
-            'license' => $package->license,
-            'version' => $package->versions()->latest()->first()->version,
-        ]);
+        $packages = Package::whereHas('versions')
+            ->with(['versions' => function ($query) {
+                $query->latest()->take(1);
+            }])
+            ->paginate(10)
+            ->through(function ($package) {
+                $latestVersion = $package->versions->first();
+                return [
+                    'id' => $package->id,
+                    'name' => $package->name,
+                    'description' => $package->description,
+                    'type' => $package->type === 1 ? 'Infrastructure' : 'CI/CD',
+                    'license' => $package->license,
+                    'version' => $latestVersion ? $latestVersion->version : '',
+                ];
+            });
 
         return Inertia::render('Generator/Index', [
             'packages' => $packages,
@@ -40,14 +50,16 @@ class GeneratorController extends Controller
         $package = Package::where('name', $vendor . '/' . $packageName)->first();
 
         if (!$package) {
-            return response()->json(['error' => 'Package not found'], 404);
+            throw new NotFoundHttpException('Package not found');
+            //return response()->json(['error' => 'Package not found'], 404);
         }
 
-        
+
         $version = $package->versions()->where('id', $id)->first();
 
         if (!$version) {
-            return response()->json(['error' => 'Version not found'], 404);
+            throw new NotFoundHttpException('Version not found');
+            //return response()->json(['error' => 'Version not found'], 404);
         }
 
         $service = $package->service()->first();
@@ -71,13 +83,70 @@ class GeneratorController extends Controller
 
         $blocksGenerate = $request->getBlocksGenerate();
 
-        $config = Storage::get($routePackage.'/config.json');
+        $config = Storage::get($routePackage . '/config.json');
 
         $config = json_decode($config, true);
 
-        View::addLocation(app_path().'/../storage/app/'.$routePackage.'templates');
 
-        return View($config['template'])->render();
+        $storagePackagePath = app_path() . '/../storage/app/' . $routePackage . 'templates';
+
+
+
+        $data = $request->data;
+
+        foreach ($config['blocks'] as $block) {
+            if (in_array($block['template'], $blocksGenerate)) {
+                foreach ($block['fields'] as $field) {
+                    if (isset($field['type']) && $field['type'] === 'select') {
+                        $options = array_column($field['options'], 'value', 'id');
+                        $selectedOptionId = $data[$block['template']][$field['name']];
+                        $selectedOptionValue = $options[$selectedOptionId] ?? null;
+                        if ($selectedOptionValue !== null) {
+                            $data[$block['template']][$field['name'] . '_value'] = $selectedOptionValue;
+                        }
+                    }
+                }
+            }
+        }
+
+        $generate[] = $this->generateFile($storagePackagePath, $config, $data, $blocksGenerate);
+
+
+        foreach ($config['blocks'] as $block) {
+            if (in_array($block['template'], $blocksGenerate)) {
+                if (isset($block['extra'])) {
+                    foreach ($block['extra'] as $extra) {
+                        if (!isset($extra['dependencies'])) {
+                            $generate[] = $this->generateFile($storagePackagePath, $extra, $data, $blocksGenerate);
+                        } else {
+                            foreach ($extra['dependencies'] as $dependency) {
+                                if (in_array($dependency, $blocksGenerate)) {
+                                    $generate[] = $this->generateFile($storagePackagePath, $extra, $data, $blocksGenerate);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return Inertia::render('Generator/Create', [
+            'generate' => $generate
+        ]);
+    }
+
+    private function generateFile($path, $config, $data, $blocksGenerate)
+    {
+
+       view::addLocation($path);
+       
+        $generate = [
+            'file' => $config['file'],
+            'language' => $config['language'],
+            'view' => view::make( $config['template'], ['config' => $config, 'data' => $data, 'blocksGenerate' => $blocksGenerate])->render()
+        ];
+
+        return $generate;
     }
 
     /**
@@ -90,6 +159,12 @@ class GeneratorController extends Controller
         if (!$package) {
             return response()->json(['error' => 'Package not found'], 404);
         }
+
+        // Verificar si el paquete tiene versiones
+        if ($package->versions()->count() == 0) {
+            return response()->json(['error' => 'Package has no versions'], 404);
+        }
+
 
         $service = $package->service()->first();
 

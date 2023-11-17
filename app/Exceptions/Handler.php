@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use Inertia\Inertia;
 
 class Handler extends ExceptionHandler
 {
@@ -26,5 +27,23 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
+
+    // app/Exceptions/Handler.php
+
+    public function render($request, Throwable $exception)
+    {
+        if ($request->wantsJson()) {
+            return parent::render($request, $exception);
+        }
+
+        if ($exception instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+            return Inertia::render('Errors/404');
+        }
+
+        // Puedes añadir condiciones adicionales para otros tipos de errores
+        // ...
+
+        return parent::render($request, $exception);
     }
 }

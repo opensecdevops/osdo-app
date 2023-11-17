@@ -57,24 +57,14 @@ class GenerateRequests extends FormRequest
 
         $rules = [];
 
-        $depenendenciesStatus = $this->get('status');
+        $status = $this->get('status');
 
-        $disableDepenendencies = [];
 
-        $allBlocks = [];
-
-        foreach ($form['blocks'] as $block) {
-            $allBlocks[] = $block['template'];
-            if (isset($block['dependencies'])) {
-                foreach ($block['dependencies'] as $dependency) {
-                    if ($depenendenciesStatus[$dependency] === false && !in_array($dependency, $disableDepenendencies)) {
-                            $disableDepenendencies[] = $dependency;
-                    }
-                }
+        foreach($status as $key => $value){
+            if($value['view'] === true){
+                $this->blocksGenerate[] = $key;
             }
         }
-
-        $this->blocksGenerate = array_diff($allBlocks, $disableDepenendencies);
 
         foreach ($form['blocks'] as $block) {
             if (in_array($block['template'], $this->blocksGenerate)) {

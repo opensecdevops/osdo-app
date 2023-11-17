@@ -2,6 +2,7 @@
 import { computed, useSlots } from 'vue'
 import CardBoxComponentBody from '@/Components/CardBoxComponentBody.vue'
 import CardBoxComponentFooter from '@/Components/CardBoxComponentFooter.vue'
+import BaseIcon from '@/Components/BaseIcon.vue'
 
 const props = defineProps({
   rounded: {
@@ -16,7 +17,8 @@ const props = defineProps({
   hasTable: Boolean,
   isForm: Boolean,
   isHoverable: Boolean,
-  isModal: Boolean
+  isModal: Boolean,
+  isRemove: Boolean
 })
 
 const emit = defineEmits(['submit'])

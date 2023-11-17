@@ -41,7 +41,7 @@ const submit = () => {
   <LayoutGuest>
     <Head title="Register" />
 
-    <SectionFullScreen v-slot="{ cardClass }" bg="purplePink">
+    <SectionFullScreen v-slot="{ cardClass }" bg="blue">
       <CardBox
         :class="cardClass"
         class="my-24"

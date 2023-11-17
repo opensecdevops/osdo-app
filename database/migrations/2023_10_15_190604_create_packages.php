@@ -13,15 +13,21 @@ return new class extends Migration
     {
         Schema::create('packages', function (Blueprint $table) {
             $table->id();
+            $table->bigInteger('repository_id')->unsigned();
             $table->bigInteger('user_id')->unsigned();
             $table->bigInteger('service_id')->unsigned();
             $table->string('name');
-            $table->string('description');
-            $table->string('license');
+            $table->string('description')->nullable();
+            $table->string('license')->nullable();
             $table->string('repository');
-            $table->string('homepage');
+            $table->string('homepage')->nullable();
             $table->integer('type');
+            $table->string('message')->default('pending');
+            // 0: pending, 1: success, 2: error, 3: processing
+            $table->integer('status')->default(0);
             $table->timestamps();
+
+            $table->unique(['repository_id', 'user_id', 'service_id']);
         });
 
         Schema::table('packages', function (Blueprint $table) {
