@@ -75,7 +75,7 @@ secret_detection:
     paths:
       - gitleaks-report.json
 
-sbom_scan:
+sbom_scan_php:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:0ee5a92d04c19d02f5f0cee57407eeb9b0312689b7dc30dda0428be73ef7bcfb
   dependencies: ['composer']
@@ -84,16 +84,29 @@ sbom_scan:
   cache:
     key: ${CI_COMMIT_REF_SLUG}-composer
     paths:
-      - Docker/www/vendor/
+      - vendor/
   script:
-    - cd Docker/www
     - composer CycloneDX:make-sbom --output-file=sbom.json --output-format=json
-    - sh ../.gitlab-ci/dependency-track.sh 
+    #- sh ../.gitlab-ci/dependency-track.sh 
   allow_failure: true
   artifacts:
     expire_in: 1 days
     paths:
-      - Docker/www/sbom.json
+      sbom.json
+
+sbom_scan_node:
+  stage: sbom_scan
+  image: node:lts-alpine3.18
+  before_script:
+    npm install -g @cyclonedx/bom
+  script:
+    - cyclonedx-node --output sbom.json
+    #- sh ../.gitlab-ci/dependency-track.sh 
+  allow_failure: true
+  artifacts:
+    expire_in: 1 days
+    paths:
+      sbom.json
 
 phpunit:
   stage: test
