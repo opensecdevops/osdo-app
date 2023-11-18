@@ -136,8 +136,8 @@ phpunit:
 
 sonarqube-check:
   stage: test
-  dependencies: ['composer']
-  needs: ['composer']
+  dependencies: ['phpunit']
+  needs: ['phpunit']
   image: 
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
