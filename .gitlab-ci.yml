@@ -115,6 +115,10 @@ phpunit:
   dependencies: ['composer']
   variables:
     XDEBUG_MODE: coverage
+  before_script:
+    - cp .env.example .env
+    - php artisan key:generate
+    - php artisan migrate
   script:
     - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
   artifacts:
