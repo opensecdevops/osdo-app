@@ -133,6 +133,7 @@ phpunit:
 
 
 sonarqube-check:
+  stage: test
   image: 
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
