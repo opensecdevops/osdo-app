@@ -28,6 +28,7 @@ composer:
 
 npm:
   image: node:20-alpine
+  stage: preparation
   cache:
     key: $CI_PROJECT_NAME-npm
     paths:
