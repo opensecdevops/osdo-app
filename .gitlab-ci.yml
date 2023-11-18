@@ -35,6 +35,8 @@ npm:
       - .npm/
   script:
     - npm ci --cache .npm --prefer-offline
+    - npm run build
+    - ls
   artifacts:
     expire_in: 30 days
     paths:
@@ -112,7 +114,7 @@ sbom_scan_node:
 phpunit:
   stage: test
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
-  dependencies: ['composer']
+  dependencies: ['composer', 'npm']
   variables:
     XDEBUG_MODE: coverage
   before_script:
