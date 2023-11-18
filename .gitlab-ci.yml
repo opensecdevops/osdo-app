@@ -117,6 +117,7 @@ phpunit:
     XDEBUG_MODE: coverage
   before_script:
     - cp .env.testing .env
+    - cat .env
     - php artisan key:generate
     - php artisan migrate
   script:
