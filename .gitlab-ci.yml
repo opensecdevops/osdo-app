@@ -42,6 +42,7 @@ npm:
     expire_in: 30 days
     paths:
       - node_modules/
+      - public/build/
 
 
 secret_detection:
