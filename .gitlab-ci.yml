@@ -127,6 +127,7 @@ phpunit:
     paths:
       - phpunit-report.xml
       - coverage-report.xml
+    expire_in: 30 min
   artifacts:
     reports:
       junit: phpunit-report.xml
@@ -149,6 +150,7 @@ sonarqube-check:
     paths:
       - .sonar/cache
   script: 
+    - ls
     - sonar-scanner
   allow_failure: true
   rules:
