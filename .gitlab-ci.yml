@@ -95,17 +95,24 @@ sbom_scan_php:
 
 sbom_scan_node:
   stage: sbom_scan
-  image: cyclonedx/cyclonedx-node:3.10.6
+  image: node:20-alpine
   before_script:
-    npm install -g @cyclonedx/bom
+    - npm install -g @cyclonedx/cyclonedx-npm@1.14.2
   script:
-    - cyclonedx-node --output sbom.json
+    - cyclonedx-npm --output-file bom.json --omit dev --short-PURLs
     #- sh ../.gitlab-ci/dependency-track.sh 
+  after_script:
+    # Add artificial metrics report to collect release evidence
+    - echo 'node_sbom run' > metrics.txt
   allow_failure: true
   artifacts:
-    expire_in: 1 days
     paths:
-      - sbom.json
+      - bom.json
+    reports:
+      # Add artificial metrics report to collect release evidence
+      metrics: metrics.txt
+      cyclonedx: bom.json
+
 
 phpunit:
   stage: test
