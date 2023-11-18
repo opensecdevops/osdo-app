@@ -116,10 +116,7 @@ phpunit:
   variables:
     XDEBUG_MODE: coverage
   before_script:
-    - cp .env.testing .env
-    - cat .env
-    - php artisan key:generate
-    - cat .env
+    - php artisan key:generate --env=testing
     - php artisan migrate
   script:
     - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
