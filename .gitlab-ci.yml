@@ -35,8 +35,6 @@ npm:
       - .npm/
   script:
     - npm ci --cache .npm --prefer-offline
-    - npm run build
-    - ls
   artifacts:
     expire_in: 30 days
     paths:
@@ -119,6 +117,7 @@ phpunit:
     XDEBUG_MODE: coverage
   before_script:
     - php artisan key:generate --env=testing
+    - npm run build
   script:
     - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
   artifacts:
