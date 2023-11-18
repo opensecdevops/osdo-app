@@ -122,10 +122,12 @@ phpunit:
   before_script:
     - php artisan key:generate --env=testing
   script:
-    - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
+    - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml --coverage-clover coverage-report.xml
   artifacts:
     paths:
       - phpunit-report.xml
+      - coverage-report.xml
+  artifacts:
     reports:
       junit: phpunit-report.xml
     expire_in: 30 min
@@ -134,6 +136,8 @@ phpunit:
 
 sonarqube-check:
   stage: test
+  dependencies: ['composer']
+  needs: ['composer']
   image: 
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
