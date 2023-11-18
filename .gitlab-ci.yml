@@ -12,39 +12,32 @@ stages:
 variables:
   DD_NOT_ON_MASTER: "false"
 
-
-
 composer:
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
-
-  # The job's stage (build, test or deploy).
   stage: preparation
-  
-  # What to run on the job.
   script:
       - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
   artifacts:
-  
-    # (Optional) Give it an expiration date, 
-    # after that period you won't be able to 
-    # download them via the UI anymore.
-    expire_in: 1 month
-    
-    # Define what to output from the job.
+    expire_in: 1 month    
     paths:
       - vendor/
   cache:
-  
-    # The variable CI_COMMIT_REF_SLUG 
-    # refers to the slug of the branch.
-    # For example: `master` for the master branch.
-    # We use the `composer` suffix to avoid conflicts with
-    # the `npm` cache that we'll define next.
     key: ${CI_COMMIT_REF_SLUG}-composer
-    
-    # Define what to cache.
     paths:
       - vendor/
+
+npm:
+  image: node:20-alpine
+  cache:
+    key: $CI_PROJECT_NAME-npm
+    paths:
+      - .npm/
+  script:
+    - npm ci --cache .npm --prefer-offline
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - node_modules/
 
 
 secret_detection:
@@ -96,6 +89,7 @@ sbom_scan_php:
 sbom_scan_node:
   stage: sbom_scan
   image: node:20-alpine
+  dependencies: ['npm']
   before_script:
     - npm install -g @cyclonedx/cyclonedx-npm@1.14.2
   script:
@@ -120,7 +114,6 @@ phpunit:
   dependencies: ['composer']
   variables:
     XDEBUG_MODE: coverage
-  before_script:
   script:
     - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
   artifacts:
