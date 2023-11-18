@@ -119,6 +119,7 @@ phpunit:
     - cp .env.testing .env
     - cat .env
     - php artisan key:generate
+    - cat .env
     - php artisan migrate
   script:
     - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml
