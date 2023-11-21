@@ -187,7 +187,6 @@ docker_scan:
       do
         [ -e "$tar_image" ] || continue;
         file_name=${tar_image%.*};
-        echo $file_name;
         if [ "$vulnerability_scanner" = "trivy" ]; then
           trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json --severity CRITICAL; 
         fi
@@ -195,7 +194,7 @@ docker_scan:
   # Enables https://docs.gitlab.com/ee/user/application_security/container_scanning/ (Container Scanning report is available on GitLab EE Ultimate or GitLab.com Gold)
   artifacts:
     reports:
-      container_scanning: /scan_result/gl-container-scanning-report.json
+      container_scanning: scan_result/gl-container-scanning-report.json
 
 docker_push:
   stage: push_image
