@@ -172,7 +172,7 @@ docker_build:
 
 docker_scan:
   stage: build_test
-  dependencies: ["defectdojo_create_engagement", "docker_build"]
+  dependencies: ["docker_build"]
   image:
     name: docker.io/aquasec/trivy:latest
     entrypoint: [""]
