@@ -230,7 +230,7 @@ docker_sign:
     - apk add --update cosign curl bash
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
   script:
-    - cosign sign --key .secure_files/cosign.key $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
+    - cosign sign --key .secure_files/cosign.key -y $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
 
 
 
