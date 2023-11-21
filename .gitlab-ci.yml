@@ -165,7 +165,7 @@ docker_build:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/deployment/php/Dockerfile"
-      --destination "harbor.opensecdevops.com/osdo/osdo-app:${CI_COMMIT_TAG}" --no-push --tar-path tar_images/osdo_app.tar
+      --destination "${DOCKER_REGISTRY_URL}/osdo/osdo-app:${CI_COMMIT_TAG}" --no-push --tar-path tar_images/osdo_app.tar
   artifacts:
     paths:
       - tar_images
@@ -177,8 +177,6 @@ docker_scan:
   image:
     name: docker.io/aquasec/trivy:latest
     entrypoint: [""]
-  variables:
-    FULL_IMAGE_NAME: harbor.opensecdevops.com/osdo/osdo-app:${CI_COMMIT_TAG}
   script:
     - mkdir -p scan_result
     - cd tar_images
@@ -218,4 +216,27 @@ docker_push:
   artifacts:
     reports:
       dotenv: tar_images/digest.env
+    expire_in: 10 min
+
+docker_sign:
+  stage: sign_image
+  dependencies: ["push_image"]
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: alpine@sha256:48d9183eb12a05c99bcc0bf44a003607b8e941e1d4f41f9ad12bdcc4b5672f86
+  before_script:
+    - apk add --update cosign
+    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+    - echo $COSIGN_KEY_PASSWORD > /tmp/cosign_pwd
+  script:
+    - cosign sign -key .secure_files/cosign.key -password @/tmp/cosign_pwd $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
+
+
+
+
+
+
+
+
 
