@@ -241,12 +241,16 @@ docker_hadolit:
   image:  hadolint/hadolint@sha256:7dba9a9f1a0350f6d021fb2f6f88900998a4fb0aaf8e4330aa8c38544f04db42
   script:
     - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
+  after_script:
     - ls
-  #after_script:
   #  - |
   #    if [ $CI_JOB_STATUS == 'failed' ]; then
   #      bash .gitlab-ci/defectdojo-finding.sh
   #    fi
+  artifacts:
+    paths:
+      - hadolit.json
+    expire_in: 1 hour
 
 
 
