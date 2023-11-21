@@ -193,8 +193,8 @@ docker_scan:
          
         fi
       done
-      - pwd
-      - ls
+    - pwd
+    - ls
   # Enables https://docs.gitlab.com/ee/user/application_security/container_scanning/ (Container Scanning report is available on GitLab EE Ultimate or GitLab.com Gold)
   artifacts:
     reports:
