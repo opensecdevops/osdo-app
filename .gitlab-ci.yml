@@ -221,7 +221,7 @@ docker_push:
 
 docker_sign:
   stage: sign_image
-  dependencies: ["push_image"]
+  dependencies: ["docker_push"]
   variables:
     GIT_STRATEGY: none
   image:
