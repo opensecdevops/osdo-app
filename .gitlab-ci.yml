@@ -156,6 +156,7 @@ sonarqube-check:
 
 docker_build:
   stage: build
+  dependencies: ['composer', 'npm']
   image:
     name: gcr.io/kaniko-project/executor:v1.14.0-debug
     entrypoint: [""]
