@@ -227,7 +227,7 @@ docker_sign:
   image:
     name: alpine@sha256:48d9183eb12a05c99bcc0bf44a003607b8e941e1d4f41f9ad12bdcc4b5672f86
   before_script:
-    - apk add --update cosign curl
+    - apk add --update cosign curl bash
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
     - echo $COSIGN_KEY_PASSWORD > /tmp/cosign_pwd
   script:
