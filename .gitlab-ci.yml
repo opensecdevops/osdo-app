@@ -193,8 +193,11 @@ docker_scan:
       done
   # Enables https://docs.gitlab.com/ee/user/application_security/container_scanning/ (Container Scanning report is available on GitLab EE Ultimate or GitLab.com Gold)
   artifacts:
+    paths:
+      - scan_result
     reports:
-      container_scanning: scan_result/gl-container-scanning-report.json
+      container_scanning: 
+        - scan_result
 
 docker_push:
   stage: push_image
@@ -210,8 +213,8 @@ docker_push:
       for tar_image in *.tar; 
       do 
         crane auth login -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASS $DOCKER_REGISTRY_URL;
-        crane push $tar_image $DOCKER_REGISTRY_URL/osdo/php8:$CI_COMMIT_SHORT_SHA -v;
-        DIGEST=$(crane digest $DOCKER_REGISTRY_URL/osdo/php8:$CI_COMMIT_SHORT_SHA);
+        crane push $tar_image $DOCKER_REGISTRY_URL/osdo/osdo-app:$CI_COMMIT_SHORT_SHA -v;
+        DIGEST=$(crane digest $DOCKER_REGISTRY_URL/osdo/osdo-app:$CI_COMMIT_SHORT_SHA);
         echo "DIGEST=${DIGEST}" >> digest.env
       done
   artifacts:
