@@ -231,7 +231,7 @@ docker_sign:
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
     - echo $COSIGN_KEY_PASSWORD > /tmp/cosign_pwd
   script:
-    - cosign sign -key .secure_files/cosign.key -password @/tmp/cosign_pwd $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
+    - cosign sign --key .secure_files/cosign.key --password @/tmp/cosign_pwd $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
 
 
 
