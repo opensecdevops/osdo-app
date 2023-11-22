@@ -123,10 +123,8 @@ sbom_scan_php:
 
 sbom_scan_node:
   stage: sbom_scan
-  image: node:20-alpine
+  image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:692c7d4a163548c90cf6b0d041ae99e113ef33c841aac3cd58c8ac6fc3c04a9f
   dependencies: ['npm']
-  before_script:
-    - npm install -g @cyclonedx/cyclonedx-npm@1.14.2
   script:
     - cyclonedx-npm --output-file sbom.json --omit dev --short-PURLs
     - sh .gitlab-ci/dependency-track.sh 
@@ -186,7 +184,7 @@ docker_hadolit:
     DD_SCAN_FILE: "hadolit.json"
     DD_SCAN_ACTIVE: "true"
     DD_SCAN_VERIFIED: "false"
-  image:  harbor.opensecdevops.com/osdo/hadolint@sha256:6c243236f8296d52631ae95f3f0a4b8237397ccfb401c5c6c9331a1efb67696a
+  image:  harbor.opensecdevops.com/osdo/hadolint@sha256:0fcd395ee873f0255886cb7f9688e1451a57a7e410526d0cba94f78b9ef65b95
   script:
     - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
   after_script:
