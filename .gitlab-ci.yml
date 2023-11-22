@@ -4,8 +4,8 @@ stages:
   - secret_detection
   - sbom_scan
   - test
-  - build
   - build_test
+  - build
   - push_image
   - sign_image
   - update_k8s_manifest
@@ -179,7 +179,14 @@ sonarqube-check:
 
 docker_hadolit:
   stage: build_test
-  image:  hadolint/hadolint@sha256:7dba9a9f1a0350f6d021fb2f6f88900998a4fb0aaf8e4330aa8c38544f04db42
+  dependencies: ["defectdojo_create_engagement"]
+  variables:
+    DD_SCAN_TYPE: "Hadolint Dockerfile check"
+    DD_PRODUCT_NAME: "Hadolint"
+    DD_SCAN_FILE: "hadolit.json"
+    DD_SCAN_ACTIVE: "true"
+    DD_SCAN_VERIFIED: "false"
+  image:  harbor.opensecdevops.com/osdo/hadolint@sha256:6c243236f8296d52631ae95f3f0a4b8237397ccfb401c5c6c9331a1efb67696a
   script:
     - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
   after_script:
@@ -216,6 +223,12 @@ docker_build:
 docker_scan:
   stage: build_test
   dependencies: ["docker_build"]
+  variables:
+    DD_SCAN_TYPE: "Trivy Scan"
+    DD_PRODUCT_NAME: "Trivy"
+    DD_SCAN_FILE: "hadolit.json"
+    DD_SCAN_ACTIVE: "true"
+    DD_SCAN_VERIFIED: "false"
   image:
     name: docker.io/aquasec/trivy:latest
     entrypoint: [""]
@@ -231,13 +244,17 @@ docker_scan:
           trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json --severity CRITICAL; 
         fi
       done
-  # Enables https://docs.gitlab.com/ee/user/application_security/container_scanning/ (Container Scanning report is available on GitLab EE Ultimate or GitLab.com Gold)
+  after_script:
+    - |
+        vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' ../scan_result/$file_name.json`; # find vulnerabilities in json file
+        cat $vulnerabilities;
+        ls;
   artifacts:
     paths:
       - scan_result
     expire_in: 1 month
 
-.docker_push:
+docker_push:
   stage: push_image
   dependencies: ["docker_build"]
   variables:
@@ -260,7 +277,7 @@ docker_scan:
       dotenv: tar_images/digest.env
     expire_in: 10 min
 
-.docker_sign:
+docker_sign:
   stage: sign_image
   dependencies: ["docker_push"]
   variables:
