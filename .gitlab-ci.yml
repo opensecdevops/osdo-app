@@ -4,8 +4,8 @@ stages:
   - secret_detection
   - sbom_scan
   - test
-  - build_test
   - build
+  - build_test
   - push_image
   - sign_image
   - update_k8s_manifest
