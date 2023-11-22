@@ -13,7 +13,34 @@ stages:
 variables:
   DD_NOT_ON_MASTER: "false"
 
-.composer:
+defectdojo_create_engagement:
+  stage: .pre
+  image: alpine
+  variables:
+    DD_ENGAGEMENT_PERIOD: 7
+    DD_ENGAGEMENT_STATUS: "Not Started"
+    DD_ENGAGEMENT_BUILD_SERVER: "null"
+    DD_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER: "null"
+    DD_ENGAGEMENT_ORCHESTRATION_ENGINE: "null"
+    DD_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT: "false"
+    DD_ENGAGEMENT_THREAT_MODEL: "true"
+    DD_ENGAGEMENT_API_TEST: "true"
+    DD_ENGAGEMENT_PEN_TEST: "true"
+    DD_ENGAGEMENT_CHECK_LIST: "true"
+  rules:
+    - if: '$DD_NOT_ON_MASTER == "true" && $CI_COMMIT_BRANCH == "master"'
+      when: never
+    - when: always
+  before_script:
+    - apk add curl jq coreutils
+  script:
+    - sh .gitlab-ci/defectdojo-engagement.sh 
+  artifacts:
+    reports:
+      dotenv: defectdojo.env
+
+
+composer:
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   stage: preparation
   script:
@@ -27,7 +54,7 @@ variables:
     paths:
       - vendor/
 
-.npm:
+npm:
   image: node:20-alpine
   stage: preparation
   needs:
@@ -46,9 +73,9 @@ variables:
       - public/build/
 
 
-.secret_detection:
+secret_detection:
   stage: secret_detection
-  #dependencies: ["defectdojo_create_engagement"]
+  dependencies: ["defectdojo_create_engagement"]
   variables:
     GIT_STRATEGY: clone
     GIT_DEPTH: 1
@@ -62,18 +89,18 @@ variables:
     entrypoint: [""]
   script:
     - gitleaks detect -v --source=$PWD  --report-path=gitleaks-report.json
-  #after_script:
-  #  - |
-  #    if [ $CI_JOB_STATUS == 'failed' ]; then
-  #      bash .gitlab-ci/defectdojo-finding.sh
-  #    fi
+  after_script:
+    - |
+      if [ $CI_JOB_STATUS == 'failed' ]; then
+        bash .gitlab-ci/defectdojo-finding.sh
+      fi
   allow_failure: true
   artifacts:
     when: on_failure
     paths:
       - gitleaks-report.json
 
-.sbom_scan_php:
+sbom_scan_php:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   dependencies: ['composer']
@@ -85,36 +112,34 @@ variables:
       - vendor/
   script:
     - composer CycloneDX:make-sbom --output-file=sbom.json --output-format=json
-    #- sh ../.gitlab-ci/dependency-track.sh 
+    - sh ../.gitlab-ci/dependency-track.sh 
   allow_failure: true
   artifacts:
     expire_in: 1 days
     paths:
       - sbom.json
+    reports:
+      cyclonedx: sbom.json
 
-.sbom_scan_node:
+sbom_scan_node:
   stage: sbom_scan
   image: node:20-alpine
   dependencies: ['npm']
   before_script:
     - npm install -g @cyclonedx/cyclonedx-npm@1.14.2
   script:
-    - cyclonedx-npm --output-file bom.json --omit dev --short-PURLs
-    #- sh ../.gitlab-ci/dependency-track.sh 
-  after_script:
-    # Add artificial metrics report to collect release evidence
-    - echo 'node_sbom run' > metrics.txt
+    - cyclonedx-npm --output-file sbom.json --omit dev --short-PURLs
+    - sh ../.gitlab-ci/dependency-track.sh 
   allow_failure: true
   artifacts:
+    expire_in: 1 days
     paths:
-      - bom.json
+      - sbom.json
     reports:
-      # Add artificial metrics report to collect release evidence
-      metrics: metrics.txt
-      cyclonedx: bom.json
+      cyclonedx: sbom.json
 
 
-.phpunit:
+phpunit:
   stage: test
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   dependencies: ['composer', 'npm']
@@ -134,7 +159,7 @@ variables:
   allow_failure: true
 
 
-.sonarqube-check:
+sonarqube-check:
   stage: test
   dependencies: ['phpunit']
   needs: ['phpunit']
@@ -149,13 +174,28 @@ variables:
     paths:
       - .sonar/cache
   script: 
-    - ls
     - sonar-scanner
   allow_failure: true
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'master'
 
-.docker_build:
+docker_hadolit:
+  stage: build_test
+  image:  hadolint/hadolint@sha256:7dba9a9f1a0350f6d021fb2f6f88900998a4fb0aaf8e4330aa8c38544f04db42
+  script:
+    - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
+  after_script:
+    - |
+      if [ $CI_JOB_STATUS == 'failed' ]; then
+        bash .gitlab-ci/defectdojo-finding.sh
+      fi
+  allow_failure: true
+  artifacts:
+    paths:
+      - hadolit.json
+    when: always
+    expire_in: 1 hour
+
+
+docker_build:
   stage: build
   dependencies: ['composer', 'npm']
   image:
@@ -172,7 +212,8 @@ variables:
       - tar_images
     when: on_success
 
-.docker_scan:
+
+docker_scan:
   stage: build_test
   dependencies: ["docker_build"]
   image:
@@ -236,22 +277,6 @@ variables:
     - docker login -u "$DOCKER_REGISTRY_USER" -p "$DOCKER_REGISTRY_PASS" $DOCKER_REGISTRY_URL
     - cosign sign --key .secure_files/cosign.key -y $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
 
-docker_hadolit:
-  stage: test
-  image:  hadolint/hadolint@sha256:7dba9a9f1a0350f6d021fb2f6f88900998a4fb0aaf8e4330aa8c38544f04db42
-  script:
-    - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
-  after_script:
-    - ls
-  #  - |
-  #    if [ $CI_JOB_STATUS == 'failed' ]; then
-  #      bash .gitlab-ci/defectdojo-finding.sh
-  #    fi
-  artifacts:
-    paths:
-      - hadolit.json
-    when: always
-    expire_in: 1 hour
 
 
 
