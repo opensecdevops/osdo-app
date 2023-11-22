@@ -112,7 +112,7 @@ sbom_scan_php:
       - vendor/
   script:
     - composer CycloneDX:make-sbom --output-file=sbom.json --output-format=json
-    - sh ../.gitlab-ci/dependency-track.sh 
+    - sh .gitlab-ci/dependency-track.sh 
   allow_failure: true
   artifacts:
     expire_in: 1 days
@@ -129,7 +129,7 @@ sbom_scan_node:
     - npm install -g @cyclonedx/cyclonedx-npm@1.14.2
   script:
     - cyclonedx-npm --output-file sbom.json --omit dev --short-PURLs
-    - sh ../.gitlab-ci/dependency-track.sh 
+    - sh .gitlab-ci/dependency-track.sh 
   allow_failure: true
   artifacts:
     expire_in: 1 days
@@ -190,10 +190,8 @@ docker_hadolit:
   script:
     - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
   after_script:
-    - |
-      if [ $CI_JOB_STATUS == 'failed' ]; then
-        bash .gitlab-ci/defectdojo-finding.sh
-      fi
+    - bash .gitlab-ci/defectdojo-finding.sh
+     
   allow_failure: true
   artifacts:
     paths:
