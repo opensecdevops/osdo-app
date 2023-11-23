@@ -39,28 +39,29 @@ defectdojo_create_engagement:
     reports:
       dotenv: defectdojo.env
 
+.dependencies_cache:
+  cache:
+    key: $CI_PROJECT_NAME-osdo
+    paths:
+      - .npm/
+      - node_modules/
+      - public/build/
+      - vendor/
 
 composer:
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   stage: preparation
   script:
       - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}-composer
-    paths:
-      - vendor/
+  extends: .dependencies_cache
+
 
 npm:
   image: node:20-alpine
   stage: preparation
   needs:
     - composer
-  cache:
-    key: $CI_PROJECT_NAME-npm
-    paths:
-      - .npm/
-      - node_modules/
-      - public/build/
+  extends: .dependencies_cache
   script:
     - npm ci --cache .npm --prefer-offline
     - npm run build
@@ -100,10 +101,7 @@ sbom_scan_php:
   dependencies: ['composer']
   variables:
     COMPOSER_ALLOW_SUPERUSER: 1
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}-composer
-    paths:
-      - vendor/
+  extends: .dependencies_cache
   script:
     - composer CycloneDX:make-sbom --output-file=sbom.json --output-format=json
     - sh .gitlab-ci/dependency-track.sh 
@@ -119,6 +117,7 @@ sbom_scan_node:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:692c7d4a163548c90cf6b0d041ae99e113ef33c841aac3cd58c8ac6fc3c04a9f
   dependencies: ['npm']
+  extends: .dependencies_cache
   script:
     - cyclonedx-npm --output-file sbom.json --omit dev --short-PURLs
     - sh .gitlab-ci/dependency-track.sh 
@@ -137,6 +136,7 @@ phpunit:
   dependencies: ['composer', 'npm']
   variables:
     XDEBUG_MODE: coverage
+  extends: .dependencies_cache
   before_script:
     - php artisan key:generate --env=testing
   script:
@@ -154,7 +154,6 @@ phpunit:
 sonarqube-check:
   stage: test
   dependencies: ['phpunit']
-  needs: ['phpunit']
   image: 
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -195,6 +194,7 @@ docker_hadolit:
 docker_build:
   stage: build
   dependencies: ['composer', 'npm']
+  extends: .dependencies_cache
   image:
     name: gcr.io/kaniko-project/executor:v1.14.0-debug
     entrypoint: [""]
