@@ -244,7 +244,7 @@ docker_scan:
         vulnerabilities=$(awk -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' "$file_name.json");
         if ! [ -z "$vulnerabilities" ]; then 
           vulns=true;
-          DD_SCAN_FILE=$file_name.json;
+          DD_SCAN_FILE=../scan_result/$file_name.json;
           ls ../
           pwd
           bash ../.gitlab-ci/defectdojo-finding.sh
