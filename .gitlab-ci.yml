@@ -287,7 +287,6 @@ docker_sign:
     - docker:24.0.7-dind
   before_script:
     - apk add --update cosign curl bash expect
-    - chmod +x .gitlab-ci/sign.sh
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
   script:
     - docker login -u "$DOCKER_REGISTRY_USER" -p "$DOCKER_REGISTRY_PASS" $DOCKER_REGISTRY_URL
