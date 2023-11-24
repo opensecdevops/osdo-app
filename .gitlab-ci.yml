@@ -224,14 +224,14 @@ docker_scan:
   script:
     - mkdir -p scan_result
     - cd tar_images
-    - >
+    - |
       for tar_image in *.tar; 
       do
         [ -e "$tar_image" ] || continue;
         file_name=${tar_image%.*};
         trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json; 
       done
-    - > 
+    - |
       cd ../scan_result
       ls;
       vulns=false;
