@@ -222,7 +222,7 @@ docker_scan:
     name: docker.io/aquasec/trivy:latest
     entrypoint: [""]
   before_script:
-    apk add --no-cache bash
+    apk add --no-cache bash curl
   script:
     - mkdir -p scan_result
     - cd tar_images
