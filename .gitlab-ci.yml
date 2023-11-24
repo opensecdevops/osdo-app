@@ -13,7 +13,7 @@ stages:
 variables:
   DD_NOT_ON_MASTER: "false"
 
-defectdojo_create_engagement:
+.defectdojo_create_engagement:
   stage: .pre
   image: alpine
   variables:
@@ -68,7 +68,7 @@ npm:
 
 
 
-secret_detection:
+.secret_detection:
   stage: secret_detection
   dependencies: ["defectdojo_create_engagement"]
   variables:
@@ -95,7 +95,7 @@ secret_detection:
     paths:
       - gitleaks-report.json
 
-sbom_scan_php:
+.sbom_scan_php:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   dependencies: ['composer']
@@ -113,7 +113,7 @@ sbom_scan_php:
     reports:
       cyclonedx: sbom.json
 
-sbom_scan_node:
+.sbom_scan_node:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:692c7d4a163548c90cf6b0d041ae99e113ef33c841aac3cd58c8ac6fc3c04a9f
   dependencies: ['npm']
@@ -130,7 +130,7 @@ sbom_scan_node:
       cyclonedx: sbom.json
 
 
-phpunit:
+.phpunit:
   stage: test
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   dependencies: ['composer', 'npm']
@@ -151,7 +151,7 @@ phpunit:
   allow_failure: true
 
 
-sonarqube-check:
+.sonarqube-check:
   stage: test
   dependencies: ['phpunit']
   image: 
@@ -168,7 +168,7 @@ sonarqube-check:
     - sonar-scanner
   allow_failure: true
 
-docker_hadolit:
+.docker_hadolit:
   stage: build_test
   dependencies: ["defectdojo_create_engagement"]
   variables:
@@ -210,7 +210,7 @@ docker_build:
     when: on_success
 
 
-docker_scan:
+.docker_scan:
   stage: build_test
   dependencies: ["docker_build"]
   variables:
@@ -286,11 +286,12 @@ docker_sign:
   services:
     - docker:24.0.7-dind
   before_script:
-    - apk add --update cosign curl bash
+    - apk add --update cosign curl bash expect
+    - chmod +x ..gitlab-ci/sign.sh
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
   script:
     - docker login -u "$DOCKER_REGISTRY_USER" -p "$DOCKER_REGISTRY_PASS" $DOCKER_REGISTRY_URL
-    - cosign sign --key .secure_files/cosign.key -y $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
+    - ./sign_and_push.sh
 
 
 
