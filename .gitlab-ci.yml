@@ -244,6 +244,8 @@ docker_scan:
         if ! [ -z "$vulnerabilities" ]; then 
           vulns=true;
           DD_SCAN_FILE="../scan_result/${file_name}.json";
+          echo $DD_SCAN_FILE
+          cat $DD_SCAN_FILE
           ls ../
           pwd
           bash ../.gitlab-ci/defectdojo-finding.sh
