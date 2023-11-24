@@ -289,8 +289,12 @@ docker_sign:
     - apk add --update cosign curl bash expect
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
   script:
-    - docker login -u "$DOCKER_REGISTRY_USER" -p "$DOCKER_REGISTRY_PASS" $DOCKER_REGISTRY_URL
-    - expect -c 'set timeout -1; set docker_registry_url $env(DOCKER_REGISTRY_URL); set digest $env(DIGEST); set cosign_password $env(COSIGN_PASSWORD); spawn cosign sign --key .secure_files/cosign.key -y $docker_registry_url/osdo/osdo-app@$digest; expect "Enter password for private key:"; send "$cosign_password\r"; expect eof;'
+    - echo "$DOCKER_REGISTRY_PASS" | docker login -u "$DOCKER_REGISTRY_USER" --password-stdin $DOCKER_REGISTRY_URL
+    - cosign sign --key .secure_files/cosign.key -y $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
+
+
+
+
 
 
 
