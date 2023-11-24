@@ -234,10 +234,17 @@ docker_scan:
           trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json --severity CRITICAL; 
         fi
       done
-  after_script:
-    - ls -la 
-    - vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' ../scan_result/$file_name.json`; # find vulnerabilities in json file
-    - cat $vulnerabilities;  
+    - cd ../scan_result
+    - |
+      for vuln_file in *.json; 
+      do
+        [ -e "$vuln_file" ] || continue;
+        file_name=${vuln_file%.*};
+        if [ "$vulnerability_scanner" = "trivy" ]; then
+          vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' $file_name.json`;
+          cat $vulnerabilities;
+        fi
+      done
   artifacts:
     paths:
       - scan_result
