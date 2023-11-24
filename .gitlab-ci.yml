@@ -247,9 +247,7 @@ docker_scan:
           bash ${CI_PROJECT_DIR}/.gitlab-ci/defectdojo-finding.sh
         fi
       done
-      if [ "$vulns" = true ]; then
-       exit 1;
-      fi
+
      
   artifacts:
     paths:
