@@ -32,7 +32,7 @@ defectdojo_create_engagement:
       when: never
     - when: always
   before_script:
-    - apk add curl jq coreutils
+    - apk add --no-cache curl jq coreutils
   script:
     - sh .gitlab-ci/defectdojo-engagement.sh 
   artifacts:
@@ -221,6 +221,8 @@ docker_scan:
   image:
     name: docker.io/aquasec/trivy:latest
     entrypoint: [""]
+  before_script:
+    apk add --no-cache bash
   script:
     - mkdir -p scan_result
     - cd tar_images
@@ -289,7 +291,7 @@ docker_sign:
   services:
     - docker:24.0.7-dind
   before_script:
-    - apk add --update cosign curl bash expect
+    - apk add --update --no-cache cosign curl bash expect
     - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
   script:
     - echo "$DOCKER_REGISTRY_PASS" | docker login -u "$DOCKER_REGISTRY_USER" --password-stdin $DOCKER_REGISTRY_URL
