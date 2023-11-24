@@ -230,20 +230,18 @@ docker_scan:
       do
         [ -e "$tar_image" ] || continue;
         file_name=${tar_image%.*};
-        if [ "$vulnerability_scanner" = "trivy" ]; then
-          trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json --severity CRITICAL; 
-        fi
+        trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json --severity CRITICAL; 
       done
-    - cd ../scan_result
-    - |
-      for vuln_file in *.json; 
+
+  after_script:
+    - cd scan_result
+    - > 
+      for result in *.json; 
       do
-        [ -e "$vuln_file" ] || continue;
-        file_name=${vuln_file%.*};
-        if [ "$vulnerability_scanner" = "trivy" ]; then
-          vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' $file_name.json`;
-          cat $vulnerabilities;
-        fi
+        [ -e "$result" ] || continue;
+        file_name=${result%.*};
+        vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' ../scan_result/$file_name.json`; # find vulnerabilities in json file
+        cat $vulnerabilities;
       done
   artifacts:
     paths:
