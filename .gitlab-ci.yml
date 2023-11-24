@@ -233,16 +233,16 @@ docker_scan:
       done
     - > 
       cd ../scan_result
-      ls
-      vulns=false
+      ls;
+      vulns=false;
       for result in *.json
       do
-        [ -e "$result" ] || continue
-        file_name=${result%.*}
-        vulnerabilities=$(awk -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' "$file_name.json") 
+        [ -e "$result" ] || continue;
+        file_name=${result%.*};
+        vulnerabilities=$(awk -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' "$file_name.json");
         if ! [ -z "$vulnerabilities" ]; then 
-          vulns=true
-          DD_SCAN_FILE=$file_name.json
+          vulns=true;
+          DD_SCAN_FILE=$file_name.json;
           bash .gitlab-ci/defectdojo-finding.sh
         fi
       done
