@@ -233,21 +233,22 @@ docker_scan:
       done
     - > 
       cd ../scan_result
-      vulns=false;
-      for result in *.json; 
+      vulns=false
+      for result in *.json
       do
-        [ -e "$result" ] || continue;
-        file_name=${result%.*};
-        vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' $file_name.json`; # find vulnerabilities in json file
-        if ! [ -z "$vulnerabilities" ]; then # if vulnerabilities found in image
-            vulns=true;
-            DD_SCAN_FILE=$file_name.json
-            bash .gitlab-ci/defectdojo-finding.sh
+        [ -e "$result" ] || continue
+        file_name=${result%.*}
+        vulnerabilities=$(awk -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' "$file_name.json") 
+        if ! [ -z "$vulnerabilities" ]; then 
+          vulns=true
+          DD_SCAN_FILE=$file_name.json
+          bash .gitlab-ci/defectdojo-finding.sh
         fi
       done
-      if [ "$vulns" = true ]
+      if [ "$vulns" = true ]; then 
         exit 1
       fi
+
   artifacts:
     paths:
       - scan_result
