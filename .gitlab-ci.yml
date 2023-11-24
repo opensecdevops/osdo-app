@@ -246,7 +246,7 @@ docker_scan:
           bash .gitlab-ci/defectdojo-finding.sh
         fi
       done
-      if ["$vulns" = true ]; then
+      if [ "$vulns" = true ]; then
        exit 1;
       fi
      
