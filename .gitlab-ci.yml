@@ -235,7 +235,7 @@ docker_scan:
         fi
       done
   after_script:
-    - ls -la ../scan_result
+    - ls -la 
     - vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' ../scan_result/$file_name.json`; # find vulnerabilities in json file
     - cat $vulnerabilities;  
   artifacts:
