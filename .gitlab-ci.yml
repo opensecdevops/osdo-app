@@ -212,7 +212,7 @@ docker_build:
 
 docker_scan:
   stage: build_test
-  dependencies: ["docker_build"]
+  dependencies: ["docker_build", "defectdojo_create_engagement"]
   variables:
     DD_SCAN_TYPE: "Trivy Scan"
     DD_PRODUCT_NAME: "Trivy"
