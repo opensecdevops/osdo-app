@@ -2,6 +2,8 @@
 
 TODAY=$(date +%Y-%m-%d)
 
+echo ${DD_SCAN_FILE}
+
 curl --location --request POST "${DD_SERVER}/api/v2/import-scan/" \
     -H 'accept: application/json' \
     -H "Authorization: Token ${DD_API_KEY}" \
