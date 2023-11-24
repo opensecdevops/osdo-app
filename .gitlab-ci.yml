@@ -235,7 +235,7 @@ docker_scan:
       cd ../scan_result
       ls;
       vulns=false;
-      for result in *.json
+      for result in *.json;
       do
         [ -e "$result" ] || continue;
         file_name=${result%.*};
