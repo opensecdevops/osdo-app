@@ -233,7 +233,7 @@ docker_scan:
         file_name=${tar_image%.*};
         trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json; 
       done
-    - |
+    - >
       cd ../scan_result
       vulns=false;
       for result in *.json;
