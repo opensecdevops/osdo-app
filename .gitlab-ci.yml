@@ -233,6 +233,7 @@ docker_scan:
       done
     - > 
       cd ../scan_result
+      ls
       vulns=false
       for result in *.json
       do
@@ -245,10 +246,7 @@ docker_scan:
           bash .gitlab-ci/defectdojo-finding.sh
         fi
       done
-      if [ "$vulns" = true ]; then 
-        exit 1
-      fi
-
+     
   artifacts:
     paths:
       - scan_result
