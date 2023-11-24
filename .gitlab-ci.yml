@@ -225,7 +225,7 @@ docker_scan:
   script:
     - mkdir -p scan_result
     - cd tar_images
-    - |
+    - >
       for tar_image in *.tar; 
       do
         [ -e "$tar_image" ] || continue;
@@ -238,9 +238,10 @@ docker_scan:
     - > 
       for result in *.json; 
       do
+        cat $result
         [ -e "$result" ] || continue;
         file_name=${result%.*};
-        vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' ../scan_result/$file_name.json`; # find vulnerabilities in json file
+        vulnerabilities=`awk  -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' $file_name.json`; # find vulnerabilities in json file
         cat $vulnerabilities;
       done
   artifacts:
