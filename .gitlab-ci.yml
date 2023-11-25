@@ -68,7 +68,7 @@ npm:
 
 
 
-.secret_detection:
+secret_detection:
   stage: secret_detection
   dependencies: ["defectdojo_create_engagement"]
   variables:
@@ -95,7 +95,7 @@ npm:
     paths:
       - gitleaks-report.json
 
-.sbom_scan_php:
+sbom_scan_php:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   dependencies: ['composer']
@@ -113,7 +113,7 @@ npm:
     reports:
       cyclonedx: sbom.json
 
-.sbom_scan_node:
+sbom_scan_node:
   stage: sbom_scan
   image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:692c7d4a163548c90cf6b0d041ae99e113ef33c841aac3cd58c8ac6fc3c04a9f
   dependencies: ['npm']
@@ -130,7 +130,7 @@ npm:
       cyclonedx: sbom.json
 
 
-.phpunit:
+phpunit:
   stage: test
   image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
   dependencies: ['composer', 'npm']
@@ -151,7 +151,7 @@ npm:
   allow_failure: true
 
 
-.sonarqube-check:
+sonarqube-check:
   stage: test
   dependencies: ['phpunit']
   image: 
@@ -168,7 +168,7 @@ npm:
     - sonar-scanner
   allow_failure: true
 
-.docker_hadolit:
+docker_hadolit:
   stage: build_test
   dependencies: ["defectdojo_create_engagement"]
   variables:
