@@ -23,11 +23,8 @@ export default [
       },
       {
         icon: mdiCogOutline,
-        label: 'Settings'
-      },
-      {
-        icon: mdiEmail,
-        label: 'Messages'
+        label: 'Services',
+        route: 'service.edit'
       },
       {
         isDivider: true
