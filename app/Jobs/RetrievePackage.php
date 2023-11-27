@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Package;
+use App\Models\PackageVersion;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -54,37 +55,54 @@ class RetrievePackage implements ShouldQueue
         $token = Crypt::decryptString($token);
 
         if ($service_id == 1) {
-            $this->validatePackage('pipeline-php-0e97821f8cfc3ccfb58d21dae08e39ce1f466f7a-0e97821f8cfc3ccfb58d21dae08e39ce1f466f7a');
+            config(['gitlab.connections.main.token' => $token]);
+            $tags = Gitlab::tags()->all($this->package->repository_id, ['sort' => 'desc', 'order_by' => 'updated']);
 
-            /* $shaSortCommit = '0e97821f';
+            if (empty($tags)) {
+                $this->fail(new NoRetryException('Not found tags'));
+            }
+
+            $shaCommit = $tags[0]['commit']['id'];
+            $shaSortCommit = $tags[0]['commit']['short_id'];
+            $files = GitLab::repositories()->archive($this->package->repository_id, ['sha' => $shaCommit], 'zip');
+            Storage::disk('local')->put('tmp/' . $this->package->id . '.zip', $files);
+            $zipPath = $storagePath . '/tmp/' . $this->package->id . '.zip';
+
+            if ($zip->open($zipPath) !== TRUE) {
+                $this->fail(new NoRetryException('Not open zip'));
+            }
+
+            $folderZip = $zip->getNameIndex(0);
+            $zip->extractTo($storagePath . '/tmp/');
+            $zip->close();
+            $this->validatePackage($folderZip);
+
             $folderPackage = sprintf('packages/%s/%s/%s', $service->service, $this->package->name, $shaSortCommit);
-            dump($folderPackage);
             if (!Storage::exists($folderPackage)) {
                 Storage::makeDirectory($folderPackage);
             }
-            
-            $folderZip = 'pipeline-php-0e97821f8cfc3ccfb58d21dae08e39ce1f466f7a-0e97821f8cfc3ccfb58d21dae08e39ce1f466f7a';
+
             $tmpFolderPackage = sprintf('tmp/%s', $folderZip);
-            dump($tmpFolderPackage);
 
-           if(Storage::move($tmpFolderPackage, $folderPackage)) {
+            if(Storage::move($tmpFolderPackage, $folderPackage)) {
                 Storage::deleteDirectory($tmpFolderPackage);
-            }*/
+            }
 
-            /*$this->package->message = 'success';
+            $config = Storage::get($folderPackage.'/config.json');
+
+            $jsonData = json_decode($config, true);
+            
+            $packageVersion = new PackageVersion();
+            $packageVersion->package_id = $this->package->id;
+            $packageVersion->version = $jsonData['version'];
+            $packageVersion->commit = $shaSortCommit;
+            $packageVersion->description = $tags[0]['message'];
+            $packageVersion->save();
+
+            $this->package->message = 'success';
             $this->package->status = 1;
-            $this->package->save();*/
-            /* config(['gitlab.connections.main.token' => $token]);
-            $project = GitLab::repositories()->archive($this->package->repository_id, ['sha' => '0e97821f8cfc3ccfb58d21dae08e39ce1f466f7a'], 'zip');
-            Storage::disk('local')->put('tmp/' . $this->package->id . '.zip', $project);
-            $zipPath = $storagePath.'/tmp/' . $this->package->id . '.zip';
-            if ($zip->open($zipPath) === TRUE) {
+            $this->package->save();
 
-                dump($zip->getNameIndex(0));
-                $zip->extractTo($storagePath.'/tmp/');
-                $zip->close();
-        
-            } */
         }
     }
 
@@ -184,6 +202,8 @@ class RetrievePackage implements ShouldQueue
                 }
             }
         }
+
+        return true;
     }
 
     private function collectTemplates($data)
