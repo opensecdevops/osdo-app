@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('repository');
             $table->string('homepage')->nullable();
             $table->integer('type');
+            // 1: Infra; 2: Pipeline
             $table->string('message')->default('pending');
             // 0: pending, 1: success, 2: error, 3: processing
             $table->integer('status')->default(0);
