@@ -279,7 +279,7 @@ const submit = () => {
         status: allBlocks,
         data: formData,
     }
-    router.post(`/generator/${route().params.vendor}/${route().params.package}/generate/${route().params.id}`, data, {
+    router.post(`/generator/${props.package.name}/generate/${route().params.id}`, data, {
         preserveState: true,
         only: ['generate']
     })

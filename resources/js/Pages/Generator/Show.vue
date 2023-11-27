@@ -20,7 +20,7 @@ const lastVersion = computed(() => {
 })
 
 const urlGenerator = computed(() => {
-    return `/generator/${route().params.vendor}/${route().params.package}/generate/${lastVersion.value.id}`;
+    return `/generator/${props.package.name}/generate/${lastVersion.value.id}`;
 })
 
 </script>
@@ -32,8 +32,7 @@ const urlGenerator = computed(() => {
         <SectionMain>
             <div class="grid grid-cols-1 lg:grid-cols-8 gap-3">
                 <div class="col-span-6">
-                    <h1 class="text-3xl font-bold">{{ route().params.vendor }}/<span class="font-light">{{
-                        route().params.package }}</span></h1>
+                    <h1 class="text-3xl font-light">{{  package.name }}</h1>
                     <hr class="h-px my-8 bg-slate-200 border-0 dark:bg-slate-900">
                 </div>
 

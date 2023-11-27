@@ -19,11 +19,10 @@ class GenerateRequests extends FormRequest
     public function authorize(): bool
     {
 
-        $vendor = $this->route('vendor');
-        $packageName = $this->route('package');
+        $packageName = $this->route('packageName');
         $id = $this->route('id');
 
-        $package = Package::where('name', $vendor . '/' . $packageName)->first();
+        $package = Package::where('name', $packageName)->first();
 
         if (!$package) {
             throw new NotFoundHttpException('Package not found');
@@ -38,7 +37,7 @@ class GenerateRequests extends FormRequest
 
         $service = $package->service()->first();
 
-        $this->packageRoute = sprintf('packages/%s/%s/%s/%s/', $service->service, $vendor, $packageName, $version->commit);
+        $this->packageRoute = sprintf('packages/%s/%s/%s/', $service->service, $packageName, $version->commit);
 
         return true;
     }
@@ -51,7 +50,7 @@ class GenerateRequests extends FormRequest
     public function rules(): array
     {
 
-        $form = Storage::get($this->packageRoute.'/config.json');
+        $form = Storage::get($this->packageRoute . '/config.json');
 
         $form = json_decode($form, true);
 
@@ -60,17 +59,17 @@ class GenerateRequests extends FormRequest
         $status = $this->get('status');
 
 
-        foreach($status as $key => $value){
-            if($value['view'] === true){
+        foreach ($status as $key => $value) {
+            if ($value['view'] === true) {
                 $this->blocksGenerate[] = $key;
             }
         }
 
         foreach ($form['blocks'] as $block) {
             if (in_array($block['template'], $this->blocksGenerate)) {
-                foreach($block['fields'] as $field){
-                    if(isset($field['rules'])){
-                        $rules['data.'.$block['template'].'.'.$field['name']] = $field['rules'];
+                foreach ($block['fields'] as $field) {
+                    if (isset($field['rules'])) {
+                        $rules['data.' . $block['template'] . '.' . $field['name']] = $field['rules'];
                     }
                 }
             }
@@ -82,18 +81,18 @@ class GenerateRequests extends FormRequest
     public function attributes()
     {
 
-        $form = Storage::get($this->packageRoute.'/config.json');
+        $form = Storage::get($this->packageRoute . '/config.json');
 
         $form = json_decode($form, true);
-        
+
         $attributes = [];
-    
+
         foreach ($form['blocks'] as $section) {
             foreach ($section['fields'] as $formField) {
-                $attributes['data.'.$section['template'] . '.' . $formField['name']] = $section['name'].' '.$formField['label'];
+                $attributes['data.' . $section['template'] . '.' . $formField['name']] = $section['name'] . ' ' . $formField['label'];
             }
         }
-    
+
         return $attributes;
     }
 

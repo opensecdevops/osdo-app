@@ -47,10 +47,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/generator', [GeneratorController::class, 'index'])->name('generator.index');
 
 
-Route::get('/generator/{vendor}/{package}', [GeneratorController::class, 'show'])->name('generator.show');
-Route::get('/generator/{vendor}/{package}/generate/{id}', [GeneratorController::class, 'create'])->name('generator.create');
-Route::post('/generator/{vendor}/{package}/generate/{id}', [GeneratorController::class, 'generate'])->name('generator.generate');
-
+Route::get('/generator/{packageName}/generate/{id}', [GeneratorController::class, 'create'])->name('generator.create')->where('packageName', '.*');
+Route::post('/generator/{packageName}/generate/{id}', [GeneratorController::class, 'generate'])->name('generator.generate')->where('packageName', '.*');
+Route::get('/generator/{packageName}', [GeneratorController::class, 'show'])->name('generator.show')->where('packageName', '.*');
 
 Route::get('/error/404', function () {
   abort(404);

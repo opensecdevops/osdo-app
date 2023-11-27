@@ -44,10 +44,9 @@ class GeneratorController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create($vendor, $packageName, $id)
+    public function create($packageName, $id)
     {
-
-        $package = Package::where('name', $vendor . '/' . $packageName)->first();
+        $package = Package::where('name', $packageName)->first();
 
         if (!$package) {
             throw new NotFoundHttpException('Package not found');
@@ -65,7 +64,7 @@ class GeneratorController extends Controller
         $service = $package->service()->first();
 
 
-        $form = Storage::get(sprintf('packages/%s/%s/%s/%s/config.json', $service->service, $vendor, $packageName, $version->commit));
+        $form = Storage::get(sprintf('packages/%s/%s/%s/config.json', $service->service, $packageName, $version->commit));
 
         return Inertia::render('Generator/Create', [
             'package' => $package,
@@ -152,9 +151,10 @@ class GeneratorController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($vendor, $packageName)
+    public function show($packageName)
     {
-        $package = Package::where('name', $vendor . '/' . $packageName)->first();
+        
+        $package = Package::where('name', $packageName)->first();
 
         if (!$package) {
             return response()->json(['error' => 'Package not found'], 404);
@@ -168,14 +168,14 @@ class GeneratorController extends Controller
 
         $service = $package->service()->first();
 
-        $versions = $package->versions()->get()->map(function ($version) use ($vendor, $packageName, $service) {
+        $versions = $package->versions()->get()->map(function ($version) use ($packageName, $service) {
             return [
                 'id' => $version->id,
                 'version' => $version->version,
                 'description' => $version->description,
                 'commit' => $version->commit,
                 'created_at' => $version->created_at->format('d/m/Y'),
-                'readme' => Str::markdown(Storage::get(sprintf('packages/%s/%s/%s/%s/README.md', $service->service, $vendor, $packageName, $version->commit))),
+                'readme' => Str::markdown(Storage::get(sprintf('packages/%s/%s/%s/README.md', $service->service, $packageName, $version->commit))),
             ];
         });
 
