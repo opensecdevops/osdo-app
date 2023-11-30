@@ -196,13 +196,13 @@ docker_build:
   dependencies: ['composer', 'npm']
   extends: .dependencies_cache
   image:
-    name: gcr.io/kaniko-project/executor:v1.14.0-debug
+    name: gcr.io/kaniko-project/executor:latest
     entrypoint: [""]
   script:
     - mkdir tar_images
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
       --destination "${DOCKER_REGISTRY_URL}/osdo/osdo-app:${CI_COMMIT_TAG}" --no-push --tar-path tar_images/osdo_app.tar
   artifacts:
     paths:
