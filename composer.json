@@ -11,6 +11,7 @@
         "http-interop/http-factory-guzzle": "^1.2",
         "inertiajs/inertia-laravel": "^0.6.8",
         "laravel/framework": "^10.10",
+        "laravel/octane": "^2.1",
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",
         "m4tthumphrey/php-gitlab-api": "^11.12",
@@ -18,6 +19,7 @@
         "tightenco/ziggy": "^1.0"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^2.13",
         "cyclonedx/cyclonedx-php-composer": "^4.2",
         "fakerphp/faker": "^1.9.1",
         "laravel/breeze": "^1.25",
