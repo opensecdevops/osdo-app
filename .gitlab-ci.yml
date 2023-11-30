@@ -196,7 +196,7 @@ docker_build:
   dependencies: ['composer', 'npm']
   extends: .dependencies_cache
   image:
-    name: gcr.io/kaniko-project/executor:v1.18.0
+    name: gcr.io/kaniko-project/executor:latest
     entrypoint: [""]
   script:
     - mkdir tar_images
