@@ -47,7 +47,6 @@ RUN apt-get update; \
   git \
   curl \
   wget \
-  nano \
   rsync \
   sqlite3 \
   libcurl4-openssl-dev \
@@ -124,71 +123,27 @@ RUN apt-get update; \
 
 
 ###########################################
-# Laravel scheduler
-###########################################
-
-RUN if [ ${CONTAINER_MODE} = 'scheduler' ] || [ ${APP_WITH_SCHEDULER} = true ]; then \
-  wget -q "https://github.com/aptible/supercronic/releases/download/v0.2.26/supercronic-linux-amd64" \
-  -O /usr/bin/supercronic \
-  && chmod +x /usr/bin/supercronic \
-  && mkdir -p /etc/supercronic \
-  && echo "*/1 * * * * php ${ROOT}/artisan schedule:run --verbose --no-interaction" > /etc/supercronic/laravel; \
-  fi
-
-###########################################
 
 RUN userdel --remove --force www-data \
   && groupadd --force -g ${WWWGROUP} ${NON_ROOT_USER} \
   && useradd -ms /bin/bash --no-log-init --no-user-group -g ${WWWGROUP} -u ${WWWUSER} ${NON_ROOT_USER}
 
-RUN chown -R ${NON_ROOT_USER}:${NON_ROOT_USER} ${ROOT} /var/{log,run}
+RUN mkdir -p ${ROOT} /var/{log,run} \
+  && chown -R ${NON_ROOT_USER}:${NON_ROOT_USER} ${ROOT} /var/{log,run}
 
 RUN chmod -R ug+rw /var/{log,run}
 
 USER ${NON_ROOT_USER}
 
-COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} --from=vendor /usr/bin/composer /usr/bin/composer
-COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} composer* ./
-
-RUN composer install \
-  --no-dev \
-  --no-interaction \
-  --no-autoloader \
-  --no-ansi \
-  --no-scripts \
-  --audit
 
 COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} . .
-#COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER}  ./public/build public
 
-RUN mkdir -p \
-  storage/framework/{sessions,views,cache,testing} \
-  storage/logs \
-  bootstrap/cache
 
 COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} deployment/octane/supervisord* /etc/supervisor/conf.d/
 COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} deployment/octane/php.ini /usr/local/etc/php/conf.d/99-octane.ini
 COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} deployment/octane/.rr.prod.yaml ./.rr.yaml
 COPY --chown=${NON_ROOT_USER}:${NON_ROOT_USER} deployment/octane/start-container /usr/local/bin/start-container
 
-RUN composer install \
-  --classmap-authoritative \
-  --no-interaction \
-  --no-ansi \
-  --no-dev \
-  && composer clear-cache \
-  && php artisan storage:link
-
-RUN if [ ${OCTANE_SERVER} = "roadrunner" ]; then \
-  if composer show | grep spiral/roadrunner-cli >/dev/null; then \
-  ./vendor/bin/rr get-binary; else \
-  echo "spiral/roadrunner-cli package is not installed. exiting..."; exit 1; \
-  fi \
-  fi
-
-RUN if [ -f "rr" ]; then \
-  chmod +x rr; \
-  fi
 
 RUN chmod +x /usr/local/bin/start-container
 
