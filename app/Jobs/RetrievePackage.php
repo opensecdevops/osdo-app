@@ -28,12 +28,16 @@ class RetrievePackage implements ShouldQueue
 
     protected $package;
 
+    private $storagePath;
+
     /**
      * Create a new job instance.
      */
     public function __construct(Package $package)
     {
         $this->package = $package;
+        $this->storagePath = Storage::path('/');
+
     }
 
     /**
@@ -46,7 +50,7 @@ class RetrievePackage implements ShouldQueue
         $this->package->save();
 
         $zip = new ZipArchive;
-        $storagePath = config('filesystems.disks.local.root');
+       
         //get service and user of package
         $user = User::find($this->package->user_id);
         $service_id = $this->package->service_id;
@@ -57,23 +61,30 @@ class RetrievePackage implements ShouldQueue
         if ($service_id == 1) {
             config(['gitlab.connections.main.token' => $token]);
             $tags = Gitlab::tags()->all($this->package->repository_id, ['sort' => 'desc', 'order_by' => 'updated']);
-
+            
             if (empty($tags)) {
-                $this->fail(new NoRetryException('Not found tags'));
+                throw new NoRetryException('Not found tags');
             }
 
             $shaCommit = $tags[0]['commit']['id'];
             $shaSortCommit = $tags[0]['commit']['short_id'];
-            $files = GitLab::repositories()->archive($this->package->repository_id, ['sha' => $shaCommit], 'zip');
-            Storage::disk('local')->put('tmp/' . $this->package->id . '.zip', $files);
-            $zipPath = $storagePath . '/tmp/' . $this->package->id . '.zip';
 
+            $packageVersion = PackageVersion::where('package_id', $this->package->id)->where('commit', $shaSortCommit)->first();
+
+            if ($packageVersion) {
+                return;
+            }
+
+            $files = GitLab::repositories()->archive($this->package->repository_id, ['sha' => $shaCommit], 'zip');
+            Storage::put('tmp/' . $this->package->id . '.zip', $files);
+            $zipPath = Storage::path('tmp/' . $this->package->id . '.zip');
+ 
             if ($zip->open($zipPath) !== TRUE) {
-                $this->fail(new NoRetryException('Not open zip'));
+                new NoRetryException('Not open zip');
             }
 
             $folderZip = $zip->getNameIndex(0);
-            $zip->extractTo($storagePath . '/tmp/');
+            $zip->extractTo($this->storagePath . '/tmp/');
             $zip->close();
             $this->validatePackage($folderZip);
 
@@ -101,7 +112,7 @@ class RetrievePackage implements ShouldQueue
 
             $this->package->message = 'success';
             $this->package->status = 1;
-            $this->package->save();
+            $this->package->save(); 
 
         }
     }
@@ -120,7 +131,7 @@ class RetrievePackage implements ShouldQueue
     {
 
         if (!Storage::exists('tmp/' . $folder . '/config.json')) {
-            $this->fail(new NoRetryException('Not found config.json'));
+            new NoRetryException('Not found config.json');
         }
 
         $config = Storage::get('tmp/' . $folder . '/config.json');
@@ -174,17 +185,16 @@ class RetrievePackage implements ShouldQueue
 
         if ($validator->fails()) {
             $error = $validator->errors()->all();
-            $this->fail(new NoRetryException($error[0]));
+            new NoRetryException($error[0]);
         }
 
         foreach ($templates as $key => $template) {
             if (!Storage::exists('tmp/' . $folder . '/templates/' . $template . '.twig')) {
-                $this->fail(new NoRetryException('Not found template ' . $template . '.twig'));
+                throw new NoRetryException('Not found template ' . $template . '.twig');
             }
         }
 
-        $storagePackagePath = app_path() . '/../storage/app/tmp/' . $folder . '/templates';
-
+        $storagePackagePath = $this->storagePath.'tmp/' . $folder . 'templates';
 
         View::addLocation($storagePackagePath);
 
@@ -193,12 +203,11 @@ class RetrievePackage implements ShouldQueue
             '--format' => 'json'
         ]);
 
-
         if ($resultLint == 1) {
             $out = json_decode(Artisan::output(), true);
             foreach ($out as $key => $lint) {
                 if ($lint['valid'] == false) {
-                    $this->fail(new NoRetryException($lint['message']));
+                    throw new NoRetryException($lint['message']);
                 }
             }
         }
