@@ -1,5 +1,5 @@
 <script setup>
-import { mdiForwardburger, mdiBackburger, mdiMenu } from '@mdi/js'
+import { mdiForwardburger, mdiBackburger, mdiMenu, mdiInformation  } from '@mdi/js'
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import menuAside from '@/menuAside.js'
@@ -10,6 +10,7 @@ import NavBar from '@/Components/NavBar.vue'
 import NavBarItemPlain from '@/Components/NavBarItemPlain.vue'
 import AsideMenu from '@/Components/AsideMenu.vue'
 import FooterBar from '@/Components/FooterBar.vue'
+import NotificationBar from '@/Components/NotificationBar.vue'
 
 const layoutAsidePadding = 'xl:pl-60'
 
@@ -71,6 +72,11 @@ const menuClick = (event, item) => {
         @menu-click="menuClick"
         @aside-lg-close-click="isAsideLgActive = false"
       /> 
+      <div class="xl:max-w-6xl xl:mx-auto">
+      <NotificationBar v-if="$page.props.flash.message" :icon="mdiInformation" color="info">
+        {{ $page.props.flash.message }}
+      </NotificationBar>
+    </div>
       <slot />
       <FooterBar>
         
