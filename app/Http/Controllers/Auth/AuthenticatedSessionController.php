@@ -48,6 +48,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return  to_route('dashboard');
+        return to_route('login');
     }
 }
