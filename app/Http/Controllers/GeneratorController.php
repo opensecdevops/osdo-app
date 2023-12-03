@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GenerateRequests;
 use App\Models\Package;
+use App\Models\PackageStats;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-//use App\Utils\TemplateEngine;
 
 class GeneratorController extends Controller
 {
@@ -128,6 +128,10 @@ class GeneratorController extends Controller
                 }
             }
         }
+
+        $PackageGenerateStats = new PackageStats();
+        $PackageGenerateStats->package_version_id = $request->id;
+        $PackageGenerateStats->save();
 
         return Inertia::render('Generator/Create', [
             'generate' => $generate

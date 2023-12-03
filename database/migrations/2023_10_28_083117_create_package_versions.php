@@ -19,6 +19,10 @@ return new class extends Migration
             $table->string('commit');
             $table->timestamps();
         });
+
+        Schema::table('package_stats', function (Blueprint $table) {
+            $table->foreign('package_id')->references('id')->on('packages');
+        });
     }
 
     /**
