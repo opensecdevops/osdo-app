@@ -49,7 +49,7 @@ defectdojo_create_engagement:
       - vendor/
 
 composer:
-  image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:8422ddd0d3925f5fb2f0f4322538df16aeb258e557955849e9a35bae08903c61
   stage: preparation
   script:
       - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
@@ -97,7 +97,7 @@ secret_detection:
 
 sbom_scan_php:
   stage: sbom_scan
-  image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:8422ddd0d3925f5fb2f0f4322538df16aeb258e557955849e9a35bae08903c61
   dependencies: ['composer']
   variables:
     COMPOSER_ALLOW_SUPERUSER: 1
@@ -132,7 +132,7 @@ sbom_scan_node:
 
 phpunit:
   stage: test
-  image: harbor.opensecdevops.com/osdo/php-ci@sha256:c4d27b1286fb998148f7439533f83c2ca40f0358bbda6009a6a3f069e14086c0
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:8422ddd0d3925f5fb2f0f4322538df16aeb258e557955849e9a35bae08903c61
   dependencies: ['composer', 'npm']
   variables:
     XDEBUG_MODE: coverage
