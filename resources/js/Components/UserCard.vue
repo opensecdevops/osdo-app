@@ -21,10 +21,10 @@ const props = defineProps({ user: Object })
 
         </div>
         <h1 class="text-2xl">
-          Hola, <b>{{ user.name }}</b
+          Hi, <b>{{ user.name }}</b
           >!
         </h1>
-        <p>Last login <b>12 mins ago</b> from <b>127.0.0.1</b></p>
+        <!--<p>Last login <b>12 mins ago</b> from <b>127.0.0.1</b></p>-->
         <div class="flex justify-center md:block">
           <BaseButtons>
             <template v-if="user.email_verified_at">
