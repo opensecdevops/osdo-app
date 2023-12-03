@@ -7,8 +7,13 @@ import CardBox from '@/Components/CardBox.vue'
 import PillTag from '@/Components/PillTag.vue'
 import BaseButton from '@/Components/BaseButton.vue'
 import BaseButtons from '@/Components/BaseButtons.vue'
+import { router } from "@inertiajs/vue3";
 
 const props = defineProps({ user: Object })
+
+const submit = () => {
+ router.post(route("verification.send"));
+};
 
 </script>
 
@@ -32,7 +37,7 @@ const props = defineProps({ user: Object })
             </template>
             <template v-else>
               <PillTag label="Not Verified" color="warning" :icon="mdiAlert" />
-              <BaseButton type="submit" color="info" label="Verificar" :small="true" :roundedFull="true" />
+              <BaseButton @click="submit" color="info" label="Verificar" :small="true" :roundedFull="true" />
             </template>
           </BaseButtons>
         </div>
