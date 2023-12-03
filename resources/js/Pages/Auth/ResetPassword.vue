@@ -30,7 +30,7 @@ const form = useForm({
 
 const submit = () => {
   form
-    .post(route('password.update'), {
+    .post(route('password.store'), {
       onFinish: () => form.reset('password', 'password_confirmation'),
     })
 }
@@ -42,7 +42,7 @@ const submit = () => {
 
     <SectionFullScreen
       v-slot="{ cardClass }"
-      bg="purplePink"
+      bg="blue"
     >
       <CardBox
         :class="cardClass"

@@ -1,5 +1,5 @@
 <script setup>
-import { useForm, Head, Link } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import { computed } from "vue";
 import LayoutGuest from "@/Layouts/LayoutGuest.vue";
 import SectionFullScreen from "@/Components/SectionFullScreen.vue";
@@ -18,14 +18,12 @@ const props = defineProps({
   },
 });
 
-const form = useForm();
-
 const verificationLinkSent = computed(
   () => props.status === "verification-link-sent"
 );
 
 const submit = () => {
-  form.post(route("verification.send"));
+ router.post(route("verification.send"));
 };
 </script>
 
@@ -33,7 +31,7 @@ const submit = () => {
   <LayoutGuest>
     <Head title="Email Verification" />
 
-    <SectionFullScreen v-slot="{ cardClass }" bg="purplePink">
+    <SectionFullScreen v-slot="{ cardClass }" bg="blue">
       <CardBox :class="cardClass" is-form @submit.prevent="submit">
         <FormValidationErrors />
 
@@ -57,8 +55,7 @@ const submit = () => {
             type="submit"
             color="info"
             label="Resend Verification Email"
-            :class="{ 'opacity-25': form.processing }"
-            :disabled="form.processing"
+
           />
           <Link :href="route('logout')" method="post" as="button">
             Logout

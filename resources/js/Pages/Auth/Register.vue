@@ -1,7 +1,7 @@
 <script setup>
 import { useForm, usePage, Head } from "@inertiajs/vue3";
 import { computed } from "vue";
-import { mdiAccount, mdiEmail, mdiFormTextboxPassword } from "@mdi/js";
+import { mdiAccount, mdiEmail, mdiFormTextboxPassword, mdiLogin } from "@mdi/js";
 import LayoutGuest from "@/Layouts/LayoutGuest.vue";
 import SectionFullScreen from "@/Components/SectionFullScreen.vue";
 import CardBox from "@/Components/CardBox.vue";
@@ -12,6 +12,7 @@ import BaseDivider from "@/Components/BaseDivider.vue";
 import BaseButton from "@/Components/BaseButton.vue";
 import BaseButtons from "@/Components/BaseButtons.vue";
 import FormValidationErrors from "@/Components/FormValidationErrors.vue";
+import BaseLevel from '@/Components/BaseLevel.vue'
 
 const form = useForm({
   name: "",
@@ -114,6 +115,7 @@ const submit = () => {
         />
 
         <BaseDivider />
+        <BaseLevel>
 
         <BaseButtons>
           <BaseButton
@@ -123,8 +125,12 @@ const submit = () => {
             :class="{ 'opacity-25': form.processing }"
             :disabled="form.processing"
           />
-          <BaseButton route-name="login" color="info" outline label="Login" />
+          </BaseButtons>
+          <BaseButtons>
+
+          <BaseButton route-name="login" color="info" outline :icon="mdiLogin" />
         </BaseButtons>
+        </BaseLevel>
       </CardBox>
     </SectionFullScreen>
   </LayoutGuest>

@@ -34,7 +34,7 @@ const submit = () => {
 
     <SectionFullScreen
       v-slot="{ cardClass }"
-      bg="purplePink"
+      bg="blue"
     >
       <CardBox
         :class="cardClass"
