@@ -7,7 +7,7 @@ const props = defineProps({
   bg: {
     type: String,
     required: true,
-    validator: (value) => ['purplePink', 'pinkRed'].includes(value)
+    validator: (value) => ['purplePink', 'pinkRed', 'blue'].includes(value)
   }
 })
 
