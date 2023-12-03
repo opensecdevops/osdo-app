@@ -1,14 +1,13 @@
 import {
-  mdiMonitor,
+  mdiHomeOutline,
   mdiCompost,
   mdiPackageVariantClosed,
-  mdiServerNetwork 
 } from '@mdi/js'
 
 export default [
   {
     route: 'dashboard',
-    icon: mdiMonitor,
+    icon: mdiHomeOutline,
     label: 'Dashboard'
   },
   {
