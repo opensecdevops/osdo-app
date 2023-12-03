@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ServicesController;
@@ -24,32 +25,14 @@ Route::get('/', function () {
   return redirect()->route('dashboard');
 })->name('index');
 
-Route::get('/dashboard', function () {
-  $packages = Package::whereHas('versions')
-  ->with(['versions' => function ($query) {
-      $query->latest()->take(1);
-  }])
-  ->paginate(10)
-  ->through(function ($package) {
-      $latestVersion = $package->versions->first();
-      return [
-          'id' => $package->id,
-          'name' => $package->name,
-          'description' => $package->description,
-          'type' => $package->type === 1 ? 'Infrastructure' : 'CI/CD',
-          'license' => $package->license,
-          'version' => $latestVersion ? $latestVersion->version : '',
-      ];
-  });
+Route::get('/dashboard', [DashboardController::class, 'show'])->name('dashboard');
 
-return Inertia::render('Dashboard', [
-  'packages' => $packages,
-]);
 
-})->name('dashboard');
+Route::middleware(['auth'])->group(function () {
+  Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+});
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 

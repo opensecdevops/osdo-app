@@ -16,7 +16,8 @@ import Table from '@/Components/Table/Table.vue'
 
 
 const props = defineProps({
-  packages: Object
+  packages: Object,
+  packageGenerate: String,
 })
 
 const columns = [
@@ -49,13 +50,14 @@ const actions = {
 
     <Head title="Dashboard" />
     <SectionMain>
+      
       <SectionTitleLineWithButton :icon="mdiChartTimelineVariant" title="Overview" main>
 
       </SectionTitleLineWithButton>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
-        <CardBoxWidget color="text-emerald-500" :icon="mdiPackageVariantClosed" :number="1" label="Packages" />
-        <CardBoxWidget color="text-blue-500" :icon="mdiCompost" :number="23" label="Generated" />
+        <CardBoxWidget color="text-emerald-500" :icon="mdiPackageVariantClosed" :number="packages.total" label="Packages" />
+        <CardBoxWidget color="text-blue-500" :icon="mdiCompost" :number="packageGenerate" label="Generated" />
       </div>
 
       <SectionTitleLineWithButton :icon="mdiPackageVariantClosed" title="Packages" main>
