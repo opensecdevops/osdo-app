@@ -12,6 +12,7 @@ import BaseButtons from '@/Components/BaseButtons.vue'
 import UserCard from '@/Components/UserCard.vue'
 import LayoutAuthenticated from '@/Layouts/LayoutAuthenticated.vue'
 import SectionTitleLineWithButton from '@/Components/SectionTitleLineWithButton.vue'
+import { Head } from '@inertiajs/vue3'
 
 const props = defineProps({ user: Object })
 
@@ -38,6 +39,8 @@ const submitPass = () => {
 </script>
 
 <template>
+    <Head :title="`Profile ${props.user.name}`"></Head>
+
   <LayoutAuthenticated>
     <SectionMain>
       <SectionTitleLineWithButton :icon="mdiAccount" title="Profile" main>
