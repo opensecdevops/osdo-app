@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::table('package_stats', function (Blueprint $table) {
+        Schema::table('package_versions', function (Blueprint $table) {
             $table->foreign('package_id')->references('id')->on('packages');
         });
     }
