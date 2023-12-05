@@ -1,10 +1,7 @@
 
-FROM harbor.opensecdevops.com/osdo/osdo-octane-base@sha256:dc4c17f14a3adef7b296d78b3b5460e69831a253cee35de09e4360bf197cb6aa
+FROM harbor.opensecdevops.com/osdo/osdo-octane-base@sha256:e27ebab41201b59321b1d789018cb1869574d4bb69001b184e3d0d7bf3e38b87
 
-COPY . /var/www/html
-
-RUN mkdir -p /var/www/html/storage/logs/ && \
-    chown -R www-data:www-data /var/www/html 
+COPY  --chown=octane:octane . /var/www/html
 
 WORKDIR /var/www/html
 
