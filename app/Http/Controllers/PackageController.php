@@ -6,6 +6,7 @@ use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Requests\StorePackageRequest;
+use App\Jobs\RetrievePackage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use GrahamCampbell\GitLab\Facades\GitLab;
@@ -76,6 +77,8 @@ class PackageController extends Controller
         $package->name = $request->name;
 
         $package->save();
+   
+        RetrievePackage::dispatchAfterResponse($package);
 
         return to_route('packages.index'); 
     }
