@@ -1,7 +1,7 @@
 
-FROM harbor.opensecdevops.com/osdo/osdo-octane-base@sha256:ce6c221c1efb9f6ba507aec0f220323c7194936abe452bf6113b8ea9a356825b
+FROM harbor.opensecdevops.com/osdo/osdo-octane-base@sha256:f70accbd22df77b0255dfba952de8d37e562c4791d112a1e8d14c14c4f58fe4d
 
-COPY  --chown=octane:octane . /var/www/html
+COPY  --chown=www-data:www-data . /var/www/html
 
 WORKDIR /var/www/html
 
