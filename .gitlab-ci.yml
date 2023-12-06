@@ -9,7 +9,7 @@ stages:
   - push_image
   - sign_image
   - update_k8s_manifest
-  - owasp
+
 variables:
   DD_NOT_ON_MASTER: "false"
 
@@ -322,7 +322,7 @@ update_manifest:
     - echo $DIGEST
     - ls -ll
     - >
-      IMAGE=$(cat k8s/deployment.yaml | grep image: | awk '{print $2}' | sed 's/\//\\\//g')
+      IMAGE=$(cat k8s/deployment.yaml | grep -m 1 image: | awk '{print $2}' | sed 's/\//\\\//g')
     - sed -i "s/${IMAGE}/harbor.opensecdevops.com\/osdo\/osdo-app@${DIGEST}/g" k8s/deployment.yaml
     - git add k8s/deployment.yaml
     - git commit -m "Update deployment image to version ${DIGEST}"
