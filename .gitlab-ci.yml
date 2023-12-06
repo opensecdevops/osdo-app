@@ -295,7 +295,38 @@ docker_sign:
     - echo "$DOCKER_REGISTRY_PASS" | docker login -u "$DOCKER_REGISTRY_USER" --password-stdin $DOCKER_REGISTRY_URL
     - cosign sign --key .secure_files/cosign.key -y $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
 
-
+update_manifest:
+  stage: update_k8s_manifest
+  dependencies:
+    - "docker_push"
+  image:
+    name: ubuntu:22.04
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - apt update -y && apt install curl grep original-awk -y
+    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+    - SSH_PRIVATE_KEY=$(cat .secure_files/osdomanifest);
+    - 'which ssh-agent || ( apt-get install openssh-client git -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - git config --global user.email "hello@opensecdevops.com"
+    - git config --global user.name "osdo"
+  script:
+    - git clone git@gitlab.com:opensecdevops/manifests.git
+    - cd manifests
+    - echo $DIGEST
+    - ls -ll
+    - >
+      IMAGE=$(cat k8s/deployment.yaml | grep image: | awk '{print $2}' | sed 's/\//\\\//g')
+    - sed -i "s/${IMAGE}/harbor.opensecdevops.com\/osdo\/osdo-app@${DIGEST}/g" k8s/deployment.yaml
+    - git add k8s/deployment.yaml
+    - git commit -m "Update deployment image to version ${DIGEST}"
+    - git push --force git@gitlab.com:opensecdevops/manifests.git HEAD:main
 
 
 
