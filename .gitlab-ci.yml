@@ -179,7 +179,7 @@ docker_hadolit:
     DD_SCAN_VERIFIED: "false"
   image:  harbor.opensecdevops.com/osdo/hadolint@sha256:0fcd395ee873f0255886cb7f9688e1451a57a7e410526d0cba94f78b9ef65b95
   script:
-    - hadolint "${CI_PROJECT_DIR}/deployment/php/Dockerfile" -f json > hadolit.json
+    - hadolint "${CI_PROJECT_DIR}/Dockerfile" -f json > hadolit.json
   after_script:
     - bash .gitlab-ci/defectdojo-finding.sh
      
