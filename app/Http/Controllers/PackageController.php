@@ -81,7 +81,9 @@ class PackageController extends Controller
             ]);
         }
         return Inertia::render('Packages/Test', [
-            'success' => true,
+            'flash' => [
+                'message' => 'Package is valid',
+            ],
         ]);
     }
 

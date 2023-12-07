@@ -17,6 +17,7 @@ const form = useForm({
 })
 
 function submitPackage() {
+  form.clearErrors()
   form.post('/packages/test')
 }
 
