@@ -6,14 +6,22 @@ use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Requests\StorePackageRequest;
+use App\Http\Requests\VerifyPackage;
 use App\Jobs\RetrievePackage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use GrahamCampbell\GitLab\Facades\GitLab;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\ValidationTrait;
+use ZipArchive;
 
 class PackageController extends Controller
 {
+
+    use ValidationTrait;
+
+    private $storagePath;
+
     /**
      * Display a listing of the resource.
      */
@@ -34,6 +42,48 @@ class PackageController extends Controller
         ]);
     }
 
+        /**
+     * Display a listing of the resource.
+     */
+    public function test()
+    {
+        return Inertia::render('Packages/Test');
+    }
+
+    public function verify(VerifyPackage $request)
+    {
+        
+        //save zip into tmp folder
+        $zipPath = $request->file('package')->store('tmp');
+        $this->storagePath = Storage::path('/');
+        $zipPath = $this->storagePath  . $zipPath;
+        $zip = new ZipArchive;
+
+        if ($zip->open($zipPath) !== TRUE) {
+            //Set Error to inertiajs
+            return Inertia::render('Packages/Test', [
+                'errors' => [
+                    'package' => 'Can\'t open zip file',
+                ],
+            ]);
+        }
+
+        $folderZip = $zip->getNameIndex(0);
+        $zip->extractTo($this->storagePath . '/tmp/');
+        $zip->close();
+        list($isValid, $errorMessage) = $this->validatePackage($folderZip);
+        if(!$isValid) {
+            //Set Error to inertiajs
+            return Inertia::render('Packages/Test', [
+                'errors' => [
+                    'package' => $errorMessage,
+                ],
+            ]);
+        }
+        return Inertia::render('Packages/Test', [
+            'success' => true,
+        ]);
+    }
 
     public function create(Request $request)
     {

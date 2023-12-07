@@ -45,6 +45,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/packages/{id}', [PackageController::class, 'destroy'])->name('packages.destroy');
     Route::get('/packages/create', [PackageController::class, 'create'])->name('packages.create');
     Route::post('/packages/store', [PackageController::class, 'store'])->name('packages.store');
+    Route::get('/packages/test', [PackageController::class, 'test'])->name('packages.test');
+    Route::post('/packages/test', [PackageController::class, 'verify'])->name('packages.verify');
+
 });
 
 

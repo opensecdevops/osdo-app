@@ -2,6 +2,8 @@ import {
   mdiHomeOutline,
   mdiCompost,
   mdiPackageVariantClosed,
+  mdiArchiveSearchOutline,
+  mdiCog
 } from '@mdi/js'
 
 export default [
@@ -16,8 +18,19 @@ export default [
     icon: mdiCompost
   },
   {
-    route: 'packages.index',
     label: 'Packages',
-    icon: mdiPackageVariantClosed
-  }
+    icon: mdiPackageVariantClosed,
+    menu: [
+      {
+        icon: mdiCog,
+        label: 'Management',
+        route: 'packages.index',
+      },
+      {
+        icon: mdiArchiveSearchOutline,
+        label: 'Validate',
+        route: 'packages.test',
+      }
+    ]
+  },
 ]

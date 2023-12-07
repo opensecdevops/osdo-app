@@ -48,8 +48,8 @@ const modelValueProp = computed(() => props.modelValue)
 watch(modelValueProp, (value) => {
   file.value = value
 
-  if (!value) {
-    root.value.input.value = null
+  if (value === null) {
+    root.value = null
   }
 })
 

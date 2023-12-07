@@ -6,7 +6,6 @@ use App\Models\Package;
 use App\Models\PackageVersion;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -15,16 +14,13 @@ use Illuminate\Support\Facades\Crypt;
 use GrahamCampbell\GitLab\Facades\GitLab;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
-use Illuminate\Support\Facades\Validator;
 use Throwable;
 use App\Exceptions\NoRetryException;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\View;
+use App\Traits\ValidationTrait;
 
 class RetrievePackage implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, ValidationTrait;
 
     protected $package;
 
@@ -86,7 +82,10 @@ class RetrievePackage implements ShouldQueue
             $folderZip = $zip->getNameIndex(0);
             $zip->extractTo($this->storagePath . '/tmp/');
             $zip->close();
-            $this->validatePackage($folderZip);
+            list($isValid, $errorMessage) = $this->validatePackage($folderZip);
+            if(!$isValid) {
+                throw new NoRetryException($errorMessage);
+            }
 
             $folderPackage = sprintf('packages/%s/%s/%s', $service->service, $this->package->name, $shaSortCommit);
             if (!Storage::exists($folderPackage)) {
@@ -127,110 +126,7 @@ class RetrievePackage implements ShouldQueue
         }
     }
 
-    private function validatePackage($folder)
-    {
-
-        if (!Storage::exists('tmp/' . $folder . '/config.json')) {
-            new NoRetryException('Not found config.json');
-        }
-
-        $config = Storage::get('tmp/' . $folder . '/config.json');
-
-        $jsonData = json_decode($config, true);
-
-        $templates = $this->collectTemplates($jsonData);
-
-        $rules = [
-            'name' => 'required|string',
-            'version' => 'required|string',
-            'description' => 'required|string',
-            'homepage' => 'nullable|string',
-            'repository' => 'nullable|string',
-            'type' => 'required|in:pipeline,infrastructure',
-            'license' => 'required|string',
-            'author' => 'required|string',
-            'template' => 'required|string',
-            'file' => 'required|string',
-            'language' => 'required|string',
-            'blocks' => 'required|array',
-            'blocks.*.template' => 'required|string',
-            'blocks.*.name' => 'required|string',
-            'blocks.*.description' => 'nullable|string',
-            'blocks.*.fields' => 'required|array',
-            'blocks.*.dependencies' => 'nullable|array',
-            'blocks.*.dependencies.*' => Rule::in($templates),
-            'blocks.*.extra' => 'nullable|array',
-            'blocks.*.extra.*.language' => 'required|string',
-            'blocks.*.extra.*.file' => 'required|string',
-            'blocks.*.extra.*.route' => 'nullable|string',
-            'blocks.*.extra.*.template' => 'required|string',
-            'blocks.*.extra.*.dependencies' => 'nullable|array',
-            'blocks.*.extra.*.dependencies.*' => Rule::in($templates),
-            'blocks.*.fields.*.type' => 'required|in:text,switch,select',
-            'blocks.*.fields.*.name' => 'required|string',
-            'blocks.*.fields.*.label' => 'required|string',
-            'blocks.*.fields.*.rules' => 'nullable|string',
-            'blocks.*.fields.*.default' => 'nullable',
-            'blocks.*.fields.*.dependencies' => 'nullable|array',
-            'blocks.*.fields.*.dependencies.*' => Rule::in($templates),
-            'blocks.*.fields.*.options' => 'required_if:blocks.*.fields.*.type,select|array',
-            'blocks.*.fields.*.options.*.id' => 'required_with:blocks.*.fields.*.options|numeric',
-            'blocks.*.fields.*.options.*.label' => 'required_with:blocks.*.fields.*.options|string',
-            'blocks.*.fields.*.options.*.value' => 'required_with:blocks.*.fields.*.options|string',
-            'blocks.*.fields.*.options.*.dependencies' => 'nullable|array',
-            'blocks.*.fields.*.options.*.dependencies.*' => Rule::in($templates),
-        ];
-
-        $validator = Validator::make($jsonData, $rules);
-
-        if ($validator->fails()) {
-            $error = $validator->errors()->all();
-            new NoRetryException($error[0]);
-        }
-
-        foreach ($templates as $key => $template) {
-            if (!Storage::exists('tmp/' . $folder . '/templates/' . $template . '.twig')) {
-                throw new NoRetryException('Not found template ' . $template . '.twig');
-            }
-        }
-
-        $storagePackagePath = $this->storagePath.'tmp/' . $folder . 'templates';
-
-        View::addLocation($storagePackagePath);
 
 
-        $resultLint = Artisan::call('twig:lint', [
-            '--format' => 'json'
-        ]);
 
-        if ($resultLint == 1) {
-            $out = json_decode(Artisan::output(), true);
-            foreach ($out as $key => $lint) {
-                if ($lint['valid'] == false) {
-                    throw new NoRetryException($lint['message']);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private function collectTemplates($data)
-    {
-        $templates = [];
-
-        foreach ($data as $key => $value) {
-            // Si la clave es 'template', la añade a la lista de templates
-            if ($key === 'template') {
-                $templates[] = $value;
-            }
-
-            // Si el valor es un array, busca recursivamente en él
-            if (is_array($value)) {
-                $templates = array_merge($templates, $this->collectTemplates($value));
-            }
-        }
-
-        return $templates;
-    }
 }
