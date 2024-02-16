@@ -30,7 +30,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['add', 'delete']);
+defineEmits(['add', 'edit', 'delete']);
 
 const mergedActions = computed(() => Object.assign({}, defaultActions, props.actions))
 
@@ -83,7 +83,7 @@ const currentItem = ref(null)
               <BaseButtons type="justify-start lg:justify-end" no-wrap>
                 <slot name="action-edit" v-bind:item="item">
                   <BaseButton v-if="mergedActions.edit.active" color="info" :icon="mdiPencil" small
-                    @click="isModalActive = true" />
+                  @click="$emit('edit', item)"  />
                 </slot>
                 <slot name="action-link" v-bind:item="item">
                   <BaseButton :href="generateURL(mergedActions.link.link, item.id)" v-if="mergedActions.link.active" color="contrast"

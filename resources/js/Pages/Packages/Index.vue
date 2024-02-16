@@ -14,6 +14,7 @@ const props = defineProps({
 const actions = {
   add: { 'active': true },
   delete: { 'active': true },
+  edit: { 'active': true },
 }
 
 
@@ -40,6 +41,10 @@ const goToCreate = () => {
   router.get(route('packages.create'))
 }
 
+const goToEdit = (element) => {
+  router.get(route('packages.editor', element.name))
+}
+
 const deletePackage = (element) => {
   router.delete(route('packages.destroy', element.id ))
 }
@@ -58,7 +63,7 @@ const deletePackage = (element) => {
 
       <CardBox class="pb-10 relative" has-table>
 
-        <Table :items="packages" :columns="columns" @add="goToCreate()" :actions="actions" @delete="deletePackage"></Table>
+        <Table :items="packages" :columns="columns" @add="goToCreate()" :actions="actions" @delete="deletePackage" @edit="goToEdit"></Table>
 
       </CardBox>
 

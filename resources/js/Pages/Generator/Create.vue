@@ -1,45 +1,228 @@
 <script setup>
-import SectionMain from '@/Components/SectionMain.vue'
-import LayoutAuthenticated from '@/Layouts/LayoutAuthenticated.vue'
-import { Head, router } from '@inertiajs/vue3'
-import FormCheckRadio from '@/Components/FormCheckRadio.vue';
-import FormField from '@/Components/FormField.vue';
-import FormControl from '@/Components/FormControl.vue';
-import CardBox from '@/Components/CardBox.vue';
 import { reactive, watch, ref } from 'vue';
-import SectionTitleLineWithButton from '@/Components/SectionTitleLineWithButton.vue'
-import { mdiCompost, mdiFileCodeOutline, mdiPlus, mdiDeleteForeverOutline, mdiChevronDown, mdiChevronUp, mdiContentCopy  } from '@mdi/js'
-import BaseButtons from '@/Components/BaseButtons.vue'
-import BaseButton from '@/Components/BaseButton.vue'
-import FormValidationErrors from '@/Components/FormValidationErrors.vue'
-import Tabs from '@/Components/Tabs/Tabs.vue'
-import BaseIcon from '@/Components/BaseIcon.vue'
 import { useFloating, autoUpdate } from '@floating-ui/vue';
 import hljs from 'highlight.js/lib/common';
 import hljsVuePlugin from "@highlightjs/vue-plugin";
 import 'highlight.js/styles/atom-one-dark.css';
+import Handlebars from "handlebars";
+import { validate, setLocales } from "robust-validator";
+import en from "robust-validator/dist/i18n/en.json";
+import { Head } from '@inertiajs/vue3'
+
+import SectionMain from '@/Components/SectionMain.vue'
+import LayoutAuthenticated from '@/Layouts/LayoutAuthenticated.vue'
+import FormCheckRadio from '@/Components/FormCheckRadio.vue';
+import FormField from '@/Components/FormField.vue';
+import FormControl from '@/Components/FormControl.vue';
+import CardBox from '@/Components/CardBox.vue';
+import SectionTitleLineWithButton from '@/Components/SectionTitleLineWithButton.vue'
+import {
+    mdiCompost,
+    mdiFileCodeOutline,
+    mdiPlus,
+    mdiDeleteForeverOutline,
+    mdiChevronDown,
+    mdiChevronUp,
+    mdiContentCopy
+} from '@mdi/js'
+import BaseButtons from '@/Components/BaseButtons.vue'
+import BaseButton from '@/Components/BaseButton.vue'
+import Tabs from '@/Components/Tabs/Tabs.vue'
+import BaseIcon from '@/Components/BaseIcon.vue'
+import NotificationBarInCard from "@/Components/NotificationBarInCard.vue";
+
+
+setLocales(en);
 
 const props = defineProps({
     package: Object,
     version: Object,
     form: Object,
-    generate: Object,
-    errors: {
-        type: Object,
-        default: () => ({})
-    },
+    templates: Array,
 })
 
+const generate = ref(null);
+const errors = ref({});
 const code = ref(null);
 
-watch(() => props.generate, (value) => {
+const getErrors = (block, field) => {
+    if (errors.value[block] && errors.value[block]['fields'][field] === false) {
+        return !errors.value[block]['fields'][field];
+    }
+    return false;
+}
+
+const getErrorMessage = (block, field) => {
+    if (errors.value[block] && errors.value[block]['errors'][field]) {
+        return errors.value[block]['errors'][field][0]['message'];
+    }
+    return "";
+}
+
+
+Handlebars.registerHelper("xif", function (expression, options) {
+    return Handlebars.helpers["x"].apply(this, [expression, options]) ? options.fn(this) : options.inverse(this);
+});
+
+
+Handlebars.registerHelper("x", function (expression, options) {
+    let result;
+    
+    // Create a new object to hold variables from the context
+    let contextVars = {};
+    let context = this;
+
+    // Copy relevant properties from the context to the new object
+    for (var key in context) {
+        if (context.hasOwnProperty(key) && !(key in options)) { // Avoid overriding options
+            contextVars[key] = context[key];
+        }
+    }
+
+    let contextValues = Object.values(contextVars);
+    // Create a function with the context variables exposed as local variables
+    var func = new Function(...Object.keys(contextVars), 'return ' + expression);    
+    
+    try {
+        result = func(...contextValues);
+    } catch (e) {
+        console.warn('•Expression: {{x \'' + expression + '\'}}\n•JS-Error: ', e, '\n•Context: ', context);
+    }
+
+    return result;
+});
+
+
+
+const submit = async () => {
+    errors.value = {};
+    console.log(errors)
+    let datas;
+
+    for (const [key, value] of Object.entries(allBlocks)) {
+        if (value.view) {
+            datas = {
+                ...datas,
+                [key]: formData[key]
+            }
+        }
+    }
+
+    let rules = {};
+
+    for (const [key, value] of Object.entries(datas)) {
+        const block = props.form.blocks.find(b => b.template === key);
+        block.fields.forEach(field => {
+            if (field && field.rules) {
+                if (!rules.hasOwnProperty(key)) {
+                    rules[key] = {};
+                }
+                if (field.name) {
+                    rules[key][field.name] = field.rules;
+                }
+            }
+        });
+    }
+
+    for (const [key, value] of Object.entries(datas)) {
+        if (rules.hasOwnProperty(key)) {
+            const result = await validate(value, rules[key]);
+            errors.value = {
+                ...errors.value,
+                [key]: result
+            }
+        }
+    }
+
+    for (const error in errors.value) {
+        if (errors.value[error].isValid === false) {
+            return;
+        }
+    }
+
+    errors.value = {};
+
+    for (const [key, value] of Object.entries(datas)) {
+        const block = props.form.blocks.find(b => b.template === key);
+        block.fields.forEach(field => {
+            if (field.type === 'select') {
+                datas[key] = {
+                    ...datas[key],
+                    [`${field.name}_value`]: field.options.find(option => option.id === value[field.name]).value
+                }
+            }
+        });
+    }
+
+    for (const [key, value] of Object.entries(datas)) {
+        let template = props.templates.find(template => template.file === key);
+        Handlebars.registerPartial(template.file, template.content);
+    }
+
+    const mainTemplate = props.templates.find(template => template.file === props.form.template);
+    const renders = [];
+    let renderedHtml;
+    try {
+        const compiledTemplate = Handlebars.compile(mainTemplate.content);
+        renderedHtml = compiledTemplate(datas);
+
+    } catch (error) {
+        console.error(error);
+        errors.value = {
+            ...errors.value,
+            Handlebars: {
+                errors: {
+                    main: [{
+                        message: error.message
+                    }]
+                }
+            }
+        }
+        return;
+    }
+
+
+    renders.push({
+        file: props.form.file,
+        view: renderedHtml,
+        language: props.form.language
+    });
+
+    for (const [key, value] of Object.entries(datas)) {
+        let block = props.form.blocks.find(b => b.template === key);
+        if (block.extra) {
+            for (const [keyextra, extra] of Object.entries(block.extra)) {
+                let generateExtra = true;
+                if (extra.dependencies) {
+                    if (!extra.dependencies.some(dep => dep in datas)) {
+                        generateExtra = false;
+                    }
+                }
+
+                if (generateExtra) {
+                    const extraTemplate = props.templates.find(template => template.file === extra.template);
+                    const compiledExtraTemplate = Handlebars.compile(extraTemplate.content);
+                    const renderedExtraHtml = compiledExtraTemplate(datas);
+                    renders.push({
+                        file: extra.route ? extra.route + extra.file : extra.file,
+                        view: renderedExtraHtml,
+                        language: extra.language
+                    });
+                }
+            }
+        }
+    }
+
+    generate.value = renders;
+}
+
+
+watch(() => generate.value, (value) => {
     if (value) {
-        console.log(value[0].view)
         tabs[1].disabled = false;
         code.value = value[0].view;
     }
-},
-)
+})
 
 const highlightjs = hljsVuePlugin.component;
 
@@ -68,7 +251,7 @@ const formData = reactive(
     }, {})
 );
 
-function toggleBlock(blockTemplate, isActive) {
+const toggleBlock = (blockTemplate, isActive) => {
     if (isActive) {
         activateBlock(blockTemplate);
         const dependencies = getDependencies(blockTemplate);
@@ -81,7 +264,6 @@ function toggleBlock(blockTemplate, isActive) {
         const canDeactivate = canDeactivateBlock(blockTemplate);
         if (canDeactivate) {
             const dependencies = getDependencies(blockTemplate);
-            console.log(dependencies)
             deactivateBlock(blockTemplate);
             resetBlock(blockTemplate);
             dependencies.forEach(dependency => {
@@ -93,9 +275,9 @@ function toggleBlock(blockTemplate, isActive) {
             console.warn('Cannot deactivate block, it is a dependency for another active block.');
         }
     }
-}
+};
 
-function updateField(blockTemplate, fieldName, value, type) {
+const updateField = (blockTemplate, fieldName, value, type) => {
     if (type != 'switch' && type != 'select') {
         return;
     }
@@ -131,53 +313,46 @@ function updateField(blockTemplate, fieldName, value, type) {
             }
         });
     }
-}
+};
 
-function activateBlock(blockTemplate) {
+const activateBlock = (blockTemplate) => {
     if (allBlocks[blockTemplate] && !allBlocks[blockTemplate].view) {
         allBlocks[blockTemplate].view = true;
         const dependencies = getDependencies(blockTemplate);
         dependencies.forEach(dependency => {
-            activateBlock(dependency); // Recursividad aquí
+            activateBlock(dependency);
         });
     }
-}
+};
 
-// Función recursiva para desactivar un bloque y, si es posible, sus dependencias.
-function deactivateBlock(blockTemplate) {
-    // Verificar si el bloque actual puede desactivarse.
+const deactivateBlock = (blockTemplate) => {
     if (allBlocks[blockTemplate] && allBlocks[blockTemplate].view) {
         if (canDeactivateBlock(blockTemplate)) {
             allBlocks[blockTemplate].view = false;
-            resetBlock(blockTemplate); // Resetear los valores del bloque a los valores por defecto.
+            resetBlock(blockTemplate);
 
-            // Obtener las dependencias del bloque actual.
             const dependencies = getDependencies(blockTemplate);
             dependencies.forEach(dependency => {
-                // Intentar desactivar cada dependencia si ya no es necesaria.
                 if (!isDependencyNeededByOtherBlocks(dependency)) {
-                    deactivateBlock(dependency); // Recursividad aquí.
+                    deactivateBlock(dependency);
                 }
             });
         } else {
             console.warn(`Cannot deactivate ${blockTemplate}, it is a dependency for another active block.`);
         }
     }
-}
+};
 
-
-// Función para resetear un bloque a su estado por defecto.
-function resetBlock(blockTemplate) {
+const resetBlock = (blockTemplate) => {
     if (formData[blockTemplate]) {
         const defaultData = props.form.blocks.find(block => block.template === blockTemplate);
         defaultData.fields.forEach(field => {
             formData[blockTemplate][field.name] = 'default' in field ? field.default : null;
         });
     }
-}
+};
 
-// Función para obtener las dependencias de un bloque.
-function getDependencies(blockTemplate) {
+const getDependencies = (blockTemplate) => {
     const block = props.form.blocks.find(b => b.template === blockTemplate);
 
     let dependencies = block && block.dependencies ? [...block.dependencies] : [];
@@ -193,53 +368,39 @@ function getDependencies(blockTemplate) {
                 }
             }
             if (field.type === "switch" && formData[blockTemplate] && formData[blockTemplate][field.name] === true) {
-                // Asumiendo que un 'switch' activado podría tener dependencias.
-                // Esto depende de la estructura de tus datos; ajusta según sea necesario.
                 if (field.dependencies) {
                     dependencies = [...dependencies, ...field.dependencies];
                 }
             }
-            // Agregar aquí más lógica si hay más tipos de campos con dependencias.
         });
     }
 
     return dependencies;
-}
+};
 
-function isDependencyNeededByOtherBlocks(dependencyTemplate) {
-
-    //Recuperamos todos los bloques activos menos el que llega en dependencyTemplate
+const isDependencyNeededByOtherBlocks = (dependencyTemplate) => {
     const activeBlocks = Object.keys(allBlocks).filter(block => {
         return block !== dependencyTemplate && allBlocks[block].view;
     });
 
-    // Si no hay bloques activos, no necesitamos seguir buscando
     if (activeBlocks.length === 0) return false;
 
-    // Revisar a nivel de bloque si existe la dependencia
     const isNeededByBlock = activeBlocks.some(block => {
         return props.form.blocks.some(b => {
             return b.template === block && b.dependencies && b.dependencies.includes(dependencyTemplate);
         });
     });
-    // Si encontramos la dependencia a nivel de bloque, no necesitamos seguir buscando
     if (isNeededByBlock) return true;
 
-    // Revisar a nivel de campo en cada bloque
     let isNeededByField = props.form.blocks.some(block => {
         return block.fields.some(field => {
-            // Revisar opciones en campos de tipo 'select'
             if (field.type === 'select' && field.options) {
                 return field.options.some(option => {
-                    // Revisar si alguna opción que ha sido seleccionada tiene la dependencia
                     const isOptionSelected = formData[block.template] && formData[block.template][field.name] === option.id;
                     return isOptionSelected && option.dependencies && option.dependencies.includes(dependencyTemplate);
                 });
-            }
-            // Revisar valor en campos de tipo 'switch'
-            else if (field.type === 'switch') {
+            } else if (field.type === 'switch') {
                 const switchValue = formData[block.template] && formData[block.template][field.name];
-                // Si el interruptor está activo y tiene dependencias, verificar si la dependencia necesaria está incluida
                 return switchValue && block.dependencies && block.dependencies.includes(dependencyTemplate);
             }
             return false;
@@ -247,42 +408,25 @@ function isDependencyNeededByOtherBlocks(dependencyTemplate) {
     });
 
     return isNeededByField;
-}
+};
 
-
-
-// Función para comprobar si se puede desactivar un bloque.
-function canDeactivateBlock(blockTemplate) {
+const canDeactivateBlock = (blockTemplate) => {
     return !isDependencyNeededByOtherBlocks(blockTemplate);
-}
+};
 
-// Función para obtener un campo por su nombre dentro de un bloque.
-function getFieldByName(blockTemplate, fieldName) {
+const getFieldByName = (blockTemplate, fieldName) => {
     const block = props.form.blocks.find(block => block.template === blockTemplate);
     return block.fields.find(field => field.name === fieldName);
-}
+};
 
 
 const showBlock = (block) => {
     for (const [key, value] of Object.entries(allBlocks)) {
-        //console.log(key, value);
         if (key == block.template && value.view == true) {
             return true;
         }
     }
     return false;
-}
-
-
-const submit = () => {
-    const data = {
-        status: allBlocks,
-        data: formData,
-    }
-    router.post(`/generator/${props.package.name}/generate/${route().params.id}`, data, {
-        preserveState: true,
-        only: ['generate']
-    })
 }
 
 const toggleColapse = (block) => {
@@ -306,7 +450,6 @@ const { floatingStyles } = useFloating(reference, floating, {
 
 const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(function () {
-        console.log('Async: Copying to clipboard was successful!');
     }, function (err) {
         console.error('Async: Could not copy text: ', err);
     });
@@ -321,7 +464,18 @@ const copyToClipboard = (text) => {
             <SectionTitleLineWithButton :icon="mdiCompost" title="Generator" main>
 
             </SectionTitleLineWithButton>
+            <NotificationBarInCard v-if="Object.keys(errors).length > 0" color="danger">
+                <b>Whoops! Something went wrong.</b>
+                <div v-for="(error, key) in errors" :key="error">{{ key }}:
+                    <ul class="pl-2">
+                        <li v-for="(message, keymessage) in error.errors" :key="message">
+                            {{ keymessage }}: {{ message[0].message }}
+                        </li>
+                    </ul>
 
+                </div>
+
+            </NotificationBarInCard>
             <Tabs :tabs="tabs">
                 <template #tab1>
                     <BaseButton color="info" rounded-full :icon="mdiPlus" ref="reference" class="relative float-right ml-2"
@@ -343,8 +497,6 @@ const copyToClipboard = (text) => {
 
                     <CardBox is-form @submit.prevent="submit">
 
-                        <FormValidationErrors />
-
                         <div v-for="block in form.blocks" :key="block">
                             <CardBox v-if="showBlock(block)" class="bg-slate-300/30 mb-2">
                                 <section class="py-1 lg:px-0 lg:mx-auto">
@@ -359,7 +511,8 @@ const copyToClipboard = (text) => {
                                     </h2>
                                 </section>
                                 <section v-show="!allBlocks[block.template].collapse">
-                                    <FormField v-for="element in block.fields" :key="element" :label="element.label">
+                                    <FormField v-for="element in block.fields" :key="element" :label="element.label"
+                                        :error="getErrorMessage(block.template, element.name)">
                                         <template v-if="element.type == 'switch'">
                                             <FormCheckRadio :type="element.type"
                                                 v-model="formData[block.template][element.name]" :name="element.name"
@@ -370,6 +523,7 @@ const copyToClipboard = (text) => {
                                         <template v-else>
                                             <FormControl :type="element.type" :options="element.options"
                                                 v-model="formData[block.template][element.name]" :name="element.name"
+                                                :error="getErrors(block.template, element.name)"
                                                 @change="updateField(block.template, element.name, formData[block.template][element.name], element.type)">
                                             </FormControl>
                                         </template>
@@ -385,12 +539,13 @@ const copyToClipboard = (text) => {
                 </template>
                 <template #tab2>
                     <div v-for="segment in generate" :key="segment" class="pb-2">
-                        
+
                         <div class="bg-gray-800 text-white border-b-2 p-2 rounded-t-lg">
                             {{ segment.file }}
-                            <BaseIcon :path="mdiContentCopy " size="20" class="float-right cursor-pointer" @click="copyToClipboard(segment.view)" />
+                            <BaseIcon :path="mdiContentCopy" size="20" class="float-right cursor-pointer"
+                                @click="copyToClipboard(segment.view)" />
                         </div>
-                    <highlightjs :language="segment.language" :code="segment.view"/>
+                        <highlightjs :language="segment.language" :code="segment.view" />
                     </div>
                 </template>
 
