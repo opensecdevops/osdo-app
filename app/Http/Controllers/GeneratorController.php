@@ -77,8 +77,6 @@ class GeneratorController extends Controller
 
         return Inertia::render('Generator/Create', [
             'package' => $package,
-            'service' => $service,
-            'version' => $version,
             'form' => json_decode($form),
             'templates' => $templates,
         ]);

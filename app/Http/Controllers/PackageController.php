@@ -266,8 +266,10 @@ class PackageController extends Controller
                 'size' => $file->getSize(),
                 'type' => 'file',
                 'extension' => $file->getExtension(),
+                'content' => $file->isFile() ? File::get($file->getPathname()) : null,
             ]);
         }   
+
 
         return Inertia::render('Packages/Editor', [
             'package' => $package,
@@ -276,7 +278,7 @@ class PackageController extends Controller
             'shaCommit' => $shaCommit,
             'shaSortCommit' => $shaSortCommit,
             'folderZip' => $folderZip,
-            'files' => $folderStructure
+            'structure' => $folderStructure,
         ]);
     }
 

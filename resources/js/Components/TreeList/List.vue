@@ -8,26 +8,18 @@
                     <span class="truncate"> {{ item.name }} </span>
                 </span>
                 <ul v-if="isFolderOpen(item.name)" class="pl-10">
-                    <TreeComponent :files="item.elements" @open="handleOpen" />
+                    <List :files="item.elements" @open="handleOpen" @contextMenu="showContextMenu"/>
                 </ul>
             </template>
             <template v-else>
-                <span v-on:dblclick="$emit('open', item)" v-on:click.right="showContextMenu"
-                    class="cursor-pointer flex flex-1 items-center overflow-hidden">
+                <div v-on:dblclick="$emit('open', item)" @contextmenu.prevent="showContextMenu($event, item)"
+                    class="cursor-pointer flex flex-1 items-center overflow-hidden"
+                    :class="{ 'bg-gray-500': targetRow == item }">
                     <BaseIcon :path="getIconPath(item.extension)" class="mr-1" />
                     <span class="truncate"> {{ item.name }} </span>
-                    <div ref="floating" :style="floatingStyles" v-if="itemsPoper && item.extension === 'hbs'"
-                        class="text-sm p-2 text-left text-slate-500 border-b border-gray-100 lg:border lg:bg-white lg:absolute lg:top-full lg:left-0 lg:min-w-full lg:z-20 lg:rounded-lg lg:shadow-lg lg:dark:bg-slate-800 dark:border-slate-700">
-
-                        <!-- Opciones del menú -->
-                        <BaseButton :icon="mdiTrashCan">Eliminar</BaseButton>
-                        <BaseButton :icon="mdiPencil">Renombrar</BaseButton>
-                        <!-- Más botones para otras acciones -->
 
 
-                    </div>
-
-                </span>
+                </div>
             </template>
         </li>
     </ul>
@@ -37,18 +29,8 @@
 
 import { ref } from 'vue';
 import { mdiCodeJson, mdiFolderOpenOutline, mdiFolderOutline, mdiTextBox, mdiCodeArray, mdiChevronDown, mdiChevronRight, mdiTrashCan, mdiPencil } from '@mdi/js'
-import BaseIcon from './BaseIcon.vue';
-import { useFloating, autoUpdate } from '@floating-ui/vue';
-import BaseButton from './BaseButton.vue';
-import { computed } from 'vue';
+import BaseIcon from '@/Components/BaseIcon.vue';
 
-
-const reference = ref(null);
-const floating = ref(null);
-
-const { floatingStyles } = useFloating(reference, floating, {
-    whileElementsMounted: autoUpdate,
-});
 
 const props = defineProps({
     files: {
@@ -57,9 +39,9 @@ const props = defineProps({
     },
 });
 
-const itemsPoper = ref(false);
+//Create array of refs to store the floating elements
 
-const emit = defineEmits(['open']);
+const emit = defineEmits(['open', 'contextMenu']);
 
 function handleOpen(file) {
     emit('open', file);
@@ -89,9 +71,31 @@ const getIconPath = (extension) => {
     }
 };
 
+const showMenu = ref(false);
+const targetRow = ref({});
+
 const showContextMenu = (event, file) => {
-    event.preventDefault();
-    file.showDropdown = true;
+    if (file.extension === 'hbs') {
+        event.preventDefault();
+        targetRow.value = file;
+        emit('contextMenu',  event, file);
+    }
 };
 
+const showDelete = ref(false);
+const modalConfirmDelete = ref(false)
+
+function handleActionClick(action) {
+    if (action === 'delete') {
+
+    }
+    console.log(action);
+    console.log(targetRow.value);
+}
+
+
+const closeContextMenu = () => {
+    showMenu.value = false;
+    targetRow.value = null;
+};
 </script>
