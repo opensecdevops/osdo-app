@@ -189,13 +189,16 @@ const submit = async () => {
         view: renderedHtml,
         language: props.form.language
     });
+    console.log(datas);
 
     for (const [key, value] of Object.entries(datas)) {
         let block = props.form.blocks.find(b => b.template === key);
         if (block.extra) {
             for (const [keyextra, extra] of Object.entries(block.extra)) {
                 let generateExtra = true;
+                console.log(extra);
                 if (extra.dependencies) {
+                    console.log(extra.dependencies.some(dep => dep in datas));
                     if (!extra.dependencies.some(dep => dep in datas)) {
                         generateExtra = false;
                     }
