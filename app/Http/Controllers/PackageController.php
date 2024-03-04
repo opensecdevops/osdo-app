@@ -223,7 +223,7 @@ class PackageController extends Controller
         if ($service_id == 1) {
             config(['gitlab.connections.main.token' => $token]);
 
-           /* $commits = GitLab::repositories()->commits($package->repository_id);
+            $commits = GitLab::repositories()->commits($package->repository_id);
 
             if (!empty($commits)) {
                 $shaCommit = $commits[0]['id'];
@@ -245,16 +245,14 @@ class PackageController extends Controller
                 $extractPath = sprintf('%stmp/%s/%s', $storagePath, $service_id, $package->id);
                 $zip->extractTo($extractPath);
                 $zip->close();
-            }*/
+            }
         }
-        $commits ="f596a54231b5d33cd666574dee32b5c1c3fd2ae0";
-        $shaCommit = "f596a54231b5d33cd666574dee32b5c1c3fd2ae0";
-        $shaSortCommit = "f596a54";
 
         $storagePath = Storage::path('/');
 
         $extractPath = sprintf('%stmp/%s/%s', $storagePath, $service_id, $package->id);
-        $folderZip = 'laravel-inertiajs-ci-for-gitlab-f596a54231b5d33cd666574dee32b5c1c3fd2ae0-f596a54231b5d33cd666574dee32b5c1c3fd2ae0';
+        
+        //$folderZip = 'laravel-inertiajs-ci-for-gitlab-f596a54231b5d33cd666574dee32b5c1c3fd2ae0-f596a54231b5d33cd666574dee32b5c1c3fd2ae0';
         // dd($extractPath.'/'. $folderZip);
 
         $files = File::allFiles($extractPath . '/' . $folderZip);
@@ -286,19 +284,6 @@ class PackageController extends Controller
         ]);
     }
 
-    public function getFile($packageName, $file) {
-        $package = Package::where('name', $packageName)->first();
-
-        if ($package->user_id != Auth::id()) {
-            return response()->json(['message' => 'You can\'t pass!!!!'], 403);
-        }
-
-        $filePath = sprintf('tmp/%s/%s/laravel-inertiajs-ci-for-gitlab-f596a54231b5d33cd666574dee32b5c1c3fd2ae0-f596a54231b5d33cd666574dee32b5c1c3fd2ae0/%s', $package->service_id, $package->id, $file);
-        if(Storage::exists($filePath)){
-            return response()->file(Storage::path($filePath));
-        }
-
-    }
 
     private function placeFile(&$structure, $paths, $fileInfo)
     {
