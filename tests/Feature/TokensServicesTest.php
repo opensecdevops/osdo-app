@@ -16,7 +16,7 @@ class TokensServicesTest extends TestCase
 {
 
     use RefreshDatabase;
-    use DatabaseMigrations;
+    //use DatabaseMigrations;
 
     protected $user;
 

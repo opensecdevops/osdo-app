@@ -261,7 +261,7 @@ const reviewCommit = () => {
                         <BaseButton v-if="testView" :icon="mdiCodeBraces" label="Code" color="info"
                             @click="testView = false" />
                         <BaseButton v-else :icon="mdiTestTube" label="Test" color="info" @click="enableTest" />
-                        <BaseButton :icon="mdiSourceBranch" label="Commit" color="info" @click="reviewCommit" />
+                        <!--<BaseButton :icon="mdiSourceBranch" label="Commit" color="info" @click="reviewCommit" /> -->
 
                     </BaseButtons>
                     <TreeComponent :files="structure" :testView="testView" @open="getFile" @delete="deleteFile" />

@@ -47,9 +47,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::post('/packages/store', [PackageController::class, 'store'])->name('packages.store');
   Route::get('/packages/test', [PackageController::class, 'test'])->name('packages.test');
   Route::post('/packages/test', [PackageController::class, 'verify'])->name('packages.verify');
-  Route::get('/packages/editor/{packageName}/file/{file}', [PackageController::class, 'getFile'])
-  ->name('packages.file')
-  ->where('packageName', '.*')->where('file', '.*');
   Route::get('/packages/editor/{packageName}', [PackageController::class, 'editor'])->name('packages.editor')->where('packageName', '.*');
 
 });
