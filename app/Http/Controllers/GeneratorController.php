@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\GenerateRequests;
 use App\Models\Package;
 use App\Models\PackageStats;
 use Illuminate\Http\Request;
@@ -65,92 +64,24 @@ class GeneratorController extends Controller
 
 
         $form = Storage::get(sprintf('packages/%s/%s/%s/config.json', $service->service, $packageName, $version->commit));
+        
+        //Get content of the templates folder and create array with the files, name file without extension and content
+        $templates = Storage::files(sprintf('packages/%s/%s/%s/templates', $service->service, $packageName, $version->commit));
+        $templates = array_map(function ($template) use ($service, $packageName, $version) {
+            return [
+                'file' => pathinfo($template, PATHINFO_FILENAME),
+                'content' => Storage::get($template),
+            ];
+        }, $templates);
+        
 
         return Inertia::render('Generator/Create', [
             'package' => $package,
-            'service' => $service,
-            'version' => $version,
             'form' => json_decode($form),
+            'templates' => $templates,
         ]);
     }
 
-
-    public function generate(GenerateRequests $request)
-    {
-
-        $routePackage = $request->getPackageRoute();
-
-        $blocksGenerate = $request->getBlocksGenerate();
-
-        $config = Storage::get($routePackage . '/config.json');
-
-        $config = json_decode($config, true);
-
-
-        $storagePackagePath = app_path() . '/../storage/app/' . $routePackage . 'templates';
-
-
-
-        $data = $request->data;
-
-        foreach ($config['blocks'] as $block) {
-            if (in_array($block['template'], $blocksGenerate)) {
-                foreach ($block['fields'] as $field) {
-                    if (isset($field['type']) && $field['type'] === 'select') {
-                        $options = array_column($field['options'], 'value', 'id');
-                        $selectedOptionId = $data[$block['template']][$field['name']];
-                        $selectedOptionValue = $options[$selectedOptionId] ?? null;
-                        if ($selectedOptionValue !== null) {
-                            $data[$block['template']][$field['name'] . '_value'] = $selectedOptionValue;
-                        }
-                    }
-                }
-            }
-        }
-
-        $generate[] = $this->generateFile($storagePackagePath, $config, $data, $blocksGenerate);
-
-
-        foreach ($config['blocks'] as $block) {
-            if (in_array($block['template'], $blocksGenerate)) {
-                if (isset($block['extra'])) {
-                    foreach ($block['extra'] as $extra) {
-                        if (!isset($extra['dependencies'])) {
-                            $generate[] = $this->generateFile($storagePackagePath, $extra, $data, $blocksGenerate);
-                        } else {
-                            foreach ($extra['dependencies'] as $dependency) {
-                                if (in_array($dependency, $blocksGenerate)) {
-                                    $generate[] = $this->generateFile($storagePackagePath, $extra, $data, $blocksGenerate);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        $PackageGenerateStats = new PackageStats();
-        $PackageGenerateStats->package_version_id = $request->id;
-        $PackageGenerateStats->save();
-
-        return Inertia::render('Generator/Create', [
-            'generate' => $generate
-        ]);
-    }
-
-    private function generateFile($path, $config, $data, $blocksGenerate)
-    {
-
-       view::addLocation($path);
-       
-        $generate = [
-            'file' => $config['file'],
-            'language' => $config['language'],
-            'view' => view::make( $config['template'], ['config' => $config, 'data' => $data, 'blocksGenerate' => $blocksGenerate])->render()
-        ];
-
-        return $generate;
-    }
 
     /**
      * Display the specified resource.

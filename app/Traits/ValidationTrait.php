@@ -77,28 +77,6 @@ trait ValidationTrait
             }
         }
 
-        $storagePackagePath = $this->storagePath.'tmp/' . $folder . 'templates';
-        
-        View::addLocation($storagePackagePath);
-
-        //check if define STDIN
-        if (!defined('STDIN')) {
-            define('STDIN', fopen('php://stdin', 'r'));
-        }
-
-        $resultLint = Artisan::call('twig:lint', [
-            '--format' => 'json'
-        ]);
-
-        if ($resultLint == 1) {
-            $out = json_decode(Artisan::output(), true);
-            foreach ($out as $key => $lint) {
-                if ($lint['valid'] == false) {
-                    return [false, $lint['message']];
-                }
-            }
-        }
-
         return [true , 'Validation successful'];
     }
 

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 class RetrievePackageTest extends TestCase
 {
     use RefreshDatabase;
-    use DatabaseMigrations;
+    //use DatabaseMigrations;
 
     protected $user;
 
