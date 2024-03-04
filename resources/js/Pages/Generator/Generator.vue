@@ -5,8 +5,7 @@ import hljs from 'highlight.js/lib/common';
 import hljsVuePlugin from "@highlightjs/vue-plugin";
 import 'highlight.js/styles/atom-one-dark.css';
 import Handlebars from "handlebars";
-import { validate, setLocales } from "robust-validator";
-import en from "robust-validator/dist/i18n/en.json";
+import { validate, setLocales, en } from "robust-validator";
 
 import FormCheckRadio from '@/Components/FormCheckRadio.vue';
 import FormField from '@/Components/FormField.vue';
@@ -138,6 +137,7 @@ const submit = async () => {
             }
         });
     }
+    console.log(datas);
 
     let loadTempaltes = [];
 
