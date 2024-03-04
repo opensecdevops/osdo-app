@@ -49,7 +49,7 @@ defectdojo_create_engagement:
       - vendor/
 
 composer:
-  image: harbor.opensecdevops.com/osdo/php-ci@sha256:8422ddd0d3925f5fb2f0f4322538df16aeb258e557955849e9a35bae08903c61
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:39497466a1165e1ad85d974fec4332bce2ae9de2275c93c449341526dd43a2fc
   stage: preparation
   script:
       - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
@@ -80,7 +80,7 @@ secret_detection:
     DD_SCAN_ACTIVE: "true"
     DD_SCAN_VERIFIED: "false"
   image: 
-    name: harbor.opensecdevops.com/osdo/gitleak@sha256:d348f3c616c5b51b8e6bb1702484d6f293712be43fc81c3b97793f0886b7f95b
+    name: harbor.opensecdevops.com/osdo/gitleak@sha256:3bed0f5591a4e49c810a93f571839b0973c325e0e465170e4312e7b539e5afc2
     entrypoint: [""]
   script:
     - gitleaks detect -v --source=$PWD  --report-path=gitleaks-report.json
@@ -97,7 +97,7 @@ secret_detection:
 
 sbom_scan_php:
   stage: sbom_scan
-  image: harbor.opensecdevops.com/osdo/php-ci@sha256:8422ddd0d3925f5fb2f0f4322538df16aeb258e557955849e9a35bae08903c61
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:39497466a1165e1ad85d974fec4332bce2ae9de2275c93c449341526dd43a2fc
   dependencies: ['composer']
   variables:
     COMPOSER_ALLOW_SUPERUSER: 1
@@ -115,7 +115,7 @@ sbom_scan_php:
 
 sbom_scan_node:
   stage: sbom_scan
-  image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:692c7d4a163548c90cf6b0d041ae99e113ef33c841aac3cd58c8ac6fc3c04a9f
+  image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:3cf682b33f38540d7c75b0438918d7d690b4b03f23d98f9e2c3bed85172cae97
   dependencies: ['npm']
   extends: .dependencies_cache
   script:
@@ -132,7 +132,7 @@ sbom_scan_node:
 
 phpunit:
   stage: test
-  image: harbor.opensecdevops.com/osdo/php-ci@sha256:8422ddd0d3925f5fb2f0f4322538df16aeb258e557955849e9a35bae08903c61
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:39497466a1165e1ad85d974fec4332bce2ae9de2275c93c449341526dd43a2fc
   dependencies: ['composer', 'npm']
   variables:
     XDEBUG_MODE: coverage
@@ -179,7 +179,7 @@ docker_hadolit:
     DD_SCAN_FILE: "hadolit.json"
     DD_SCAN_ACTIVE: "true"
     DD_SCAN_VERIFIED: "false"
-  image:  harbor.opensecdevops.com/osdo/hadolint@sha256:0fcd395ee873f0255886cb7f9688e1451a57a7e410526d0cba94f78b9ef65b95
+  image:  harbor.opensecdevops.com/osdo/hadolint@sha256:837ce008d9fe6577f9170b99ebbd5a65265a6ff3570ebea7847d2b85e498e767
   script:
     - hadolint "${CI_PROJECT_DIR}/Dockerfile" -f json > hadolit.json
   after_script:
