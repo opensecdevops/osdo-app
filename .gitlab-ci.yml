@@ -171,7 +171,7 @@ sonarqube-check:
 docker_hadolit:
   stage: build_test
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   dependencies: ["defectdojo_create_engagement"]
   variables:
     DD_SCAN_TYPE: "Hadolint Dockerfile check"
@@ -196,7 +196,7 @@ docker_hadolit:
 docker_build:
   stage: build
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   dependencies: ['composer', 'npm']
   extends: .dependencies_cache
   image:
@@ -217,7 +217,7 @@ docker_build:
 docker_scan:
   stage: build_test
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   dependencies: ["docker_build", "defectdojo_create_engagement"]
   variables:
     DD_SCAN_TYPE: "Trivy Scan"
@@ -264,7 +264,7 @@ docker_scan:
 docker_push:
   stage: push_image
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   dependencies: ["docker_build"]
   variables:
     GIT_STRATEGY: none
@@ -289,7 +289,7 @@ docker_push:
 docker_sign:
   stage: sign_image
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   dependencies: ["docker_push"]
   variables:
     GIT_STRATEGY: none
@@ -308,7 +308,7 @@ docker_sign:
 update_manifest:
   stage: update_k8s_manifest
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "master" && $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
   dependencies:
     - "docker_push"
   image:
