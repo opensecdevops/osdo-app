@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -49,12 +51,12 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Relationships user has many packages
      */
-    public function packages()
+    public function packages(): HasMany
     {
         return $this->hasMany(Package::class);
     }
 
-    public function services()
+    public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class)->withPivot('token')->withTimestamps();
     }

@@ -59,7 +59,7 @@ class RetrievePackageTest extends TestCase
         ]);
     }
 
-    public function testJobHandlesNoTagsError()
+    public function testJobHandlesNoTagsError(): void
     {
 
         $this->user->services()->attach(1, ['token' => Crypt::encryptString('1234567890')]);
@@ -82,7 +82,7 @@ class RetrievePackageTest extends TestCase
         ]);
     }
 
-    public function testJobValidateImport()
+    public function testJobValidateImport(): void
     {
         Storage::fake('local');
 
@@ -129,7 +129,7 @@ class RetrievePackageTest extends TestCase
         ]);
     }
 
-    public function testJobValidateNoTiwgFound()
+    public function testJobValidateNoTiwgFound(): void
     {
         Storage::fake('local');
 
