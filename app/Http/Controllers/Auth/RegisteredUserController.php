@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Providers\AppServiceProvider;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
@@ -44,6 +45,6 @@ class RegisteredUserController extends Controller
 
         event(new Registered($user));
 
-        return redirect(RouteServiceProvider::HOME)->with('message', 'Your account has been created. Please check your email for a verification link.');
+        return redirect(AppServiceProvider::HOME)->with('message', 'Your account has been created. Please check your email for a verification link.');
     }
 }
