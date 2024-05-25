@@ -9,7 +9,6 @@ class PackageVersion extends Model
 {
     use HasFactory;
 
-
     public function package()
     {
         return $this->belongsTo(Package::class);

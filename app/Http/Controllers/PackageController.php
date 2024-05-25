@@ -2,25 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Package;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Http\Requests\StorePackageRequest;
 use App\Http\Requests\VerifyPackage;
 use App\Jobs\RetrievePackage;
+use App\Models\Package;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Crypt;
-use GrahamCampbell\GitLab\Facades\GitLab;
-use Illuminate\Support\Facades\Storage;
 use App\Traits\ValidationTrait;
 use Exception;
+use GrahamCampbell\GitLab\Facades\GitLab;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use ZipArchive;
 
 class PackageController extends Controller
 {
-
     use ValidationTrait;
 
     private $storagePath;
@@ -59,10 +58,10 @@ class PackageController extends Controller
         //save zip into tmp folder
         $zipFile = $request->file('package')->store('tmp');
         $this->storagePath = Storage::path('/');
-        $zipPath = $this->storagePath  . $zipFile;
+        $zipPath = $this->storagePath.$zipFile;
         $zip = new ZipArchive;
 
-        if ($zip->open($zipPath) !== TRUE) {
+        if ($zip->open($zipPath) !== true) {
             //Set Error to inertiajs
             return Inertia::render('Packages/Test', [
                 'errors' => [
@@ -72,14 +71,15 @@ class PackageController extends Controller
         }
 
         $folderZip = $zip->getNameIndex(0);
-        $zip->extractTo($this->storagePath . '/tmp/');
+        $zip->extractTo($this->storagePath.'/tmp/');
         $zip->close();
         Storage::delete($zipFile);
 
-        list($isValid, $errorMessage) = $this->validatePackage($folderZip);
+        [$isValid, $errorMessage] = $this->validatePackage($folderZip);
 
-        if (!$isValid) {
-            Storage::deleteDirectory('tmp/' . $folderZip);
+        if (! $isValid) {
+            Storage::deleteDirectory('tmp/'.$folderZip);
+
             //Set Error to inertiajs
             return Inertia::render('Packages/Test', [
                 'errors' => [
@@ -186,7 +186,7 @@ class PackageController extends Controller
         //Package delete only by owner
         $package = Package::find($packageId);
 
-        if (!$package) {
+        if (! $package) {
             return response()->json(['message' => 'Package not found'], 404);
         }
 
@@ -195,7 +195,6 @@ class PackageController extends Controller
         }
 
         $service = $package->service()->first();
-
 
         $folderPackage = sprintf('packages/%s/%s', $service->service, $package->name);
 
@@ -225,18 +224,18 @@ class PackageController extends Controller
 
             $commits = GitLab::repositories()->commits($package->repository_id);
 
-            if (!empty($commits)) {
+            if (! empty($commits)) {
                 $shaCommit = $commits[0]['id'];
                 $shaSortCommit = $commits[0]['short_id'];
 
-                  $files = GitLab::repositories()->archive($package->repository_id, ['sha' => $shaCommit], 'zip');
+                $files = GitLab::repositories()->archive($package->repository_id, ['sha' => $shaCommit], 'zip');
                 $finalPathZip = sprintf('tmp/%s/%s/%s.zip', $service_id, $package->id, $shaSortCommit);
 
                 Storage::put($finalPathZip, $files);
                 $zipPath = Storage::path($finalPathZip);
                 $zip = new ZipArchive;
 
-                if ($zip->open($zipPath) !== TRUE) {
+                if ($zip->open($zipPath) !== true) {
                     new Exception('Not open zip');
                 }
 
@@ -251,11 +250,11 @@ class PackageController extends Controller
         $storagePath = Storage::path('/');
 
         $extractPath = sprintf('%stmp/%s/%s', $storagePath, $service_id, $package->id);
-        
+
         //$folderZip = 'laravel-inertiajs-ci-for-gitlab-f596a54231b5d33cd666574dee32b5c1c3fd2ae0-f596a54231b5d33cd666574dee32b5c1c3fd2ae0';
         // dd($extractPath.'/'. $folderZip);
 
-        $files = File::allFiles($extractPath . '/' . $folderZip);
+        $files = File::allFiles($extractPath.'/'.$folderZip);
 
         $folderStructure = [];
 
@@ -270,8 +269,7 @@ class PackageController extends Controller
                 'extension' => $file->getExtension(),
                 'content' => $file->isFile() ? File::get($file->getPathname()) : null,
             ]);
-        }   
-
+        }
 
         return Inertia::render('Packages/Editor', [
             'package' => $package,
@@ -284,26 +282,24 @@ class PackageController extends Controller
         ]);
     }
 
-
     private function placeFile(&$structure, $paths, $fileInfo)
     {
         if (empty($paths) || $paths[0] == '') {
             $structure[] = $fileInfo;
+
             return;
         }
-    
+
         $currentFolder = array_shift($paths);
-    
-        if (!isset($structure[$currentFolder])) {
+
+        if (! isset($structure[$currentFolder])) {
             $structure[$currentFolder] = [
                 'name' => $currentFolder,
                 'type' => 'folder',
                 'elements' => [],
             ];
         }
-    
+
         $this->placeFile($structure[$currentFolder]['elements'], $paths, $fileInfo);
     }
-    
-
 }

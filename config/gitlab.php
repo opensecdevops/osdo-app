@@ -41,8 +41,8 @@ return [
     'connections' => [
 
         'main' => [
-            'token'   => 'your-token',
-            'method'  => 'token',
+            'token' => 'your-token',
+            'method' => 'token',
             // 'backoff' => false,
             // 'cache'   => false,
             // 'sudo'    => null,
@@ -50,8 +50,8 @@ return [
         ],
 
         'alternative' => [
-            'token'   => 'your-token',
-            'method'  => 'oauth',
+            'token' => 'your-token',
+            'method' => 'oauth',
             // 'backoff' => false,
             // 'cache'   => false,
             // 'sudo'    => null,
@@ -74,14 +74,14 @@ return [
     'cache' => [
 
         'main' => [
-            'driver'    => 'illuminate',
+            'driver' => 'illuminate',
             'connector' => null, // null means use default driver
             // 'min'       => 43200,
             // 'max'       => 172800
         ],
 
         'bar' => [
-            'driver'    => 'illuminate',
+            'driver' => 'illuminate',
             'connector' => 'redis', // config/cache.php
             // 'min'       => 43200,
             // 'max'       => 172800

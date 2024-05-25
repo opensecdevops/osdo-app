@@ -23,7 +23,7 @@ class StoreServiceRequests extends FormRequest
     {
         return [
             'token' => 'required|string',
-            'service' => 'required|exists:services,id'
+            'service' => 'required|exists:services,id',
         ];
     }
 }

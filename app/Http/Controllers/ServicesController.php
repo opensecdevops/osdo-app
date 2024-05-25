@@ -2,18 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Http\RedirectResponse;
+use App\Http\Requests\StoreServiceRequests;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
-use App\Models\ServiceUser;
-use App\Models\Service;
-use App\Http\Requests\StoreServiceRequests;
+use Illuminate\Support\Facades\Crypt;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Crypt;
 
 class ServicesController extends Controller
 {
@@ -26,13 +21,12 @@ class ServicesController extends Controller
 
         $servicesUser = $user->services()->paginate(10)->through(fn ($service) => [
             'id' => $service->id,
-            'service' => $service->service
+            'service' => $service->service,
         ]);
-
 
         $services = Service::all()->map(fn ($service) => [
             'id' => $service->id,
-            'service' => $service->service
+            'service' => $service->service,
         ]);
 
         return Inertia::render('Profile/Services', [
@@ -46,7 +40,7 @@ class ServicesController extends Controller
 
         $user = Auth::user();
 
-        $token =  Crypt::encryptString($request->token);
+        $token = Crypt::encryptString($request->token);
 
         $serviceId = $request->service;
 
@@ -54,7 +48,6 @@ class ServicesController extends Controller
 
         return to_route('service.edit');
     }
-
 
     /**
      * Delete the user's account.

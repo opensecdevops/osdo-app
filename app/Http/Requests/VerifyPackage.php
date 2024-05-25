@@ -22,7 +22,7 @@ class VerifyPackage extends FormRequest
     public function rules(): array
     {
         return [
-            'package' => 'required|file|mimes:zip'
+            'package' => 'required|file|mimes:zip',
         ];
     }
 }

@@ -2,21 +2,21 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\NoRetryException;
 use App\Models\Package;
 use App\Models\PackageVersion;
 use App\Models\User;
+use App\Traits\ValidationTrait;
+use GrahamCampbell\GitLab\Facades\GitLab;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Crypt;
-use GrahamCampbell\GitLab\Facades\GitLab;
 use Illuminate\Support\Facades\Storage;
-use ZipArchive;
 use Throwable;
-use App\Exceptions\NoRetryException;
-use App\Traits\ValidationTrait;
+use ZipArchive;
 
 class RetrievePackage implements ShouldQueue
 {
@@ -46,7 +46,7 @@ class RetrievePackage implements ShouldQueue
         $this->package->save();
 
         $zip = new ZipArchive;
-       
+
         //get service and user of package
         $user = User::find($this->package->user_id);
         $service_id = $this->package->service_id;
@@ -57,7 +57,7 @@ class RetrievePackage implements ShouldQueue
         if ($service_id == 1) {
             config(['gitlab.connections.main.token' => $token]);
             $tags = Gitlab::tags()->all($this->package->repository_id, ['sort' => 'desc', 'order_by' => 'updated']);
-            
+
             if (empty($tags)) {
                 throw new NoRetryException('Not found tags');
             }
@@ -72,36 +72,36 @@ class RetrievePackage implements ShouldQueue
             }
 
             $files = GitLab::repositories()->archive($this->package->repository_id, ['sha' => $shaCommit], 'zip');
-            Storage::put('tmp/' . $this->package->id . '.zip', $files);
-            $zipPath = Storage::path('tmp/' . $this->package->id . '.zip');
- 
-            if ($zip->open($zipPath) !== TRUE) {
+            Storage::put('tmp/'.$this->package->id.'.zip', $files);
+            $zipPath = Storage::path('tmp/'.$this->package->id.'.zip');
+
+            if ($zip->open($zipPath) !== true) {
                 new NoRetryException('Not open zip');
             }
 
             $folderZip = $zip->getNameIndex(0);
-            $zip->extractTo($this->storagePath . '/tmp/');
+            $zip->extractTo($this->storagePath.'/tmp/');
             $zip->close();
-            list($isValid, $errorMessage) = $this->validatePackage($folderZip);
-            if(!$isValid) {
+            [$isValid, $errorMessage] = $this->validatePackage($folderZip);
+            if (! $isValid) {
                 throw new NoRetryException($errorMessage);
             }
 
             $folderPackage = sprintf('packages/%s/%s/%s', $service->service, $this->package->name, $shaSortCommit);
-            if (!Storage::exists($folderPackage)) {
+            if (! Storage::exists($folderPackage)) {
                 Storage::makeDirectory($folderPackage);
             }
 
             $tmpFolderPackage = sprintf('tmp/%s', $folderZip);
 
-            if(Storage::move($tmpFolderPackage, $folderPackage)) {
+            if (Storage::move($tmpFolderPackage, $folderPackage)) {
                 Storage::deleteDirectory($tmpFolderPackage);
             }
 
             $config = Storage::get($folderPackage.'/config.json');
 
             $jsonData = json_decode($config, true);
-            
+
             $packageVersion = new PackageVersion();
             $packageVersion->package_id = $this->package->id;
             $packageVersion->version = $jsonData['version'];
@@ -111,12 +111,12 @@ class RetrievePackage implements ShouldQueue
 
             $this->package->message = 'success';
             $this->package->status = 1;
-            $this->package->save(); 
+            $this->package->save();
 
         }
     }
 
-    public function failed(Throwable  $exception)
+    public function failed(Throwable $exception)
     {
         if ($exception instanceof NoRetryException) {
             $this->package->message = $exception->getMessage();
@@ -125,8 +125,4 @@ class RetrievePackage implements ShouldQueue
             $this->delete();
         }
     }
-
-
-
-
 }

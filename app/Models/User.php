@@ -44,9 +44,7 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
-     * 
      * Relationships user has many packages
-     * 
      */
     public function packages()
     {
@@ -55,6 +53,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function services()
     {
-        return $this->belongsToMany(Service::class)->withPivot('token')->withTimestamps(); 
+        return $this->belongsToMany(Service::class)->withPivot('token')->withTimestamps();
     }
 }

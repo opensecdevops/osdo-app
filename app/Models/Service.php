@@ -11,7 +11,7 @@ class Service extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class)->withPivot('token')->withTimestamps(); 
+        return $this->belongsToMany(User::class)->withPivot('token')->withTimestamps();
     }
 
     public function packages()
@@ -19,4 +19,3 @@ class Service extends Model
         return $this->hasMany(Package::class);
     }
 }
- 

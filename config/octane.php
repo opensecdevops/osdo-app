@@ -227,7 +227,7 @@ return [
             'open_http2_protocol' => true,
             'document_root' => public_path(),
             'enable_static_handler' => true,
-        ]
-    ]
+        ],
+    ],
 
 ];

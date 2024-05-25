@@ -10,20 +10,20 @@ class Package extends Model
     use HasFactory;
 
     /**
-     * 
      * Relationships package belongs to user
-     * 
      */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function versions() {
+    public function versions()
+    {
         return $this->hasMany(PackageVersion::class);
     }
 
-    public function service() {
+    public function service()
+    {
         return $this->belongsTo(Service::class);
     }
 }

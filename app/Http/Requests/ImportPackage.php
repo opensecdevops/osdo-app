@@ -25,5 +25,4 @@ class ImportPackage extends FormRequest
             'repository' => 'required|url',
         ];
     }
-
 }

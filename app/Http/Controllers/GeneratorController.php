@@ -3,12 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Package;
-use App\Models\PackageStats;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\View;
+use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class GeneratorController extends Controller
@@ -25,6 +23,7 @@ class GeneratorController extends Controller
             ->paginate(10)
             ->through(function ($package) {
                 $latestVersion = $package->versions->first();
+
                 return [
                     'id' => $package->id,
                     'name' => $package->name,
@@ -47,33 +46,30 @@ class GeneratorController extends Controller
     {
         $package = Package::where('name', $packageName)->first();
 
-        if (!$package) {
+        if (! $package) {
             throw new NotFoundHttpException('Package not found');
             //return response()->json(['error' => 'Package not found'], 404);
         }
 
-
         $version = $package->versions()->where('id', $id)->first();
 
-        if (!$version) {
+        if (! $version) {
             throw new NotFoundHttpException('Version not found');
             //return response()->json(['error' => 'Version not found'], 404);
         }
 
         $service = $package->service()->first();
 
-
         $form = Storage::get(sprintf('packages/%s/%s/%s/config.json', $service->service, $packageName, $version->commit));
-        
+
         //Get content of the templates folder and create array with the files, name file without extension and content
         $templates = Storage::files(sprintf('packages/%s/%s/%s/templates', $service->service, $packageName, $version->commit));
-        $templates = array_map(function ($template) use ($service, $packageName, $version) {
+        $templates = array_map(function ($template) {
             return [
                 'file' => pathinfo($template, PATHINFO_FILENAME),
                 'content' => Storage::get($template),
             ];
         }, $templates);
-        
 
         return Inertia::render('Generator/Create', [
             'package' => $package,
@@ -82,16 +78,15 @@ class GeneratorController extends Controller
         ]);
     }
 
-
     /**
      * Display the specified resource.
      */
     public function show($packageName)
     {
-        
+
         $package = Package::where('name', $packageName)->first();
 
-        if (!$package) {
+        if (! $package) {
             return response()->json(['error' => 'Package not found'], 404);
         }
 
@@ -99,7 +94,6 @@ class GeneratorController extends Controller
         if ($package->versions()->count() == 0) {
             return response()->json(['error' => 'Package has no versions'], 404);
         }
-
 
         $service = $package->service()->first();
 

@@ -2,19 +2,16 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Support\Facades\DB;
-
-use Tests\TestCase;
-use Inertia\Testing\AssertableInertia as Assert;
 use App\Models\User;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class TokensServicesTest extends TestCase
 {
-
     use RefreshDatabase;
     //use DatabaseMigrations;
 
@@ -26,14 +23,11 @@ class TokensServicesTest extends TestCase
 
         $this->seed();
 
-
         $this->user = User::factory()->create([
             'name' => 'John',
             'email' => 'johndoe@example.com',
         ]);
     }
-
-
 
     public function test_get_page_add_service(): void
     {
@@ -58,7 +52,7 @@ class TokensServicesTest extends TestCase
     public function test_error_register_service(): void
     {
         $this->actingAs($this->user)
-            ->get(route('service.edit'));  
+            ->get(route('service.edit'));
 
         $this
             ->followingRedirects()
@@ -76,7 +70,7 @@ class TokensServicesTest extends TestCase
                     )
                     ->where('errors', [
                         'token' => 'The token field is required.',
-                        'service' => 'The service field is required.'
+                        'service' => 'The service field is required.',
                     ])
             );
     }
@@ -84,13 +78,13 @@ class TokensServicesTest extends TestCase
     public function test_register_service(): void
     {
         $this->actingAs($this->user)
-            ->get(route('service.edit'));  
+            ->get(route('service.edit'));
 
         $this
             ->followingRedirects()
             ->post(route('service.store'), [
                 'token' => '123456789',
-                'service' => 1
+                'service' => 1,
             ])
             ->assertInertia(
                 fn (Assert $assert) => $assert
@@ -106,14 +100,11 @@ class TokensServicesTest extends TestCase
                     ->where('errors', [])
             );
 
-            
+        $db = DB::table('service_user')->where('user_id', $this->user->id)->where('service_id', 1)->first();
 
-            $db = DB::table('service_user')->where('user_id', $this->user->id)->where('service_id', 1)->first();
+        $token = Crypt::decryptString($db->token);
 
-            $token =  Crypt::decryptString($db->token);
-
-            $this->assertEquals('123456789', $token);
-
+        $this->assertEquals('123456789', $token);
 
     }
 }

@@ -3,9 +3,9 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Throwable;
 use Inertia\Inertia;
 use Sentry\Laravel\Integration;
+use Throwable;
 
 class Handler extends ExceptionHandler
 {
@@ -41,7 +41,6 @@ class Handler extends ExceptionHandler
         if ($exception instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
             return Inertia::render('Errors/404');
         }
-
 
         // Puedes añadir condiciones adicionales para otros tipos de errores
         // ...

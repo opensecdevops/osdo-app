@@ -4,8 +4,6 @@ namespace App\Traits;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Validation\Rule;
 
 trait ValidationTrait
@@ -13,11 +11,11 @@ trait ValidationTrait
     private function validatePackage($folder)
     {
 
-        if (!Storage::exists('tmp/' . $folder . '/config.json')) {
+        if (! Storage::exists('tmp/'.$folder.'/config.json')) {
             return [false, 'Not found config.json'];
         }
 
-        $config = Storage::get('tmp/' . $folder . '/config.json');
+        $config = Storage::get('tmp/'.$folder.'/config.json');
 
         $jsonData = json_decode($config, true);
 
@@ -68,16 +66,17 @@ trait ValidationTrait
 
         if ($validator->fails()) {
             $error = $validator->errors()->all();
+
             return [false, $error[0]];
         }
 
         foreach ($templates as $key => $template) {
-            if (!Storage::exists('tmp/' . $folder . '/templates/' . $template . '.twig')) {
-                return [false, 'Not found template ' . $template . '.twig'];
+            if (! Storage::exists('tmp/'.$folder.'/templates/'.$template.'.twig')) {
+                return [false, 'Not found template '.$template.'.twig'];
             }
         }
 
-        return [true , 'Validation successful'];
+        return [true, 'Validation successful'];
     }
 
     private function collectTemplates($data)
