@@ -1,0 +1,88 @@
+name: CI — OSDO App (Laravel)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests PHP
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: osdo_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo, pdo_mysql, xml, bcmath
+          coverage: xdebug
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Instalar dependencias Composer
+        run: composer install --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Preparar entorno de pruebas
+        run: |
+          cp .env.example .env.testing
+          php artisan key:generate --env=testing
+          php artisan migrate --env=testing --force
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: osdo_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+
+      - name: Ejecutar tests
+        run: php artisan test --coverage --min=70
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: osdo_test
+          DB_USERNAME: root
+          DB_PASSWORD: root
+
+      - name: Análisis estático con Larastan
+        run: |
+          if [ -f "vendor/bin/phpstan" ]; then
+            vendor/bin/phpstan analyse --memory-limit=1G
+          else
+            echo "Larastan no instalado — omitiendo"
+          fi
+
+  sast:
+    name: SAST con OSDO
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opensecdevops/osdo-actions/actions/osdo-sast@osdo-sast/v2
+        with:
+          path: .
+          language: php
+          fail-on-finding: false

@@ -1,0 +1,347 @@
+stages:
+  - .pre
+  - preparation
+  - secret_detection
+  - sbom_scan
+  - test
+  - build
+  - build_test
+  - push_image
+  - sign_image
+  - update_k8s_manifest
+
+variables:
+  DD_NOT_ON_MASTER: "false"
+
+defectdojo_create_engagement:
+  stage: .pre
+  image: alpine
+  variables:
+    DD_ENGAGEMENT_PERIOD: 7
+    DD_ENGAGEMENT_STATUS: "Not Started"
+    DD_ENGAGEMENT_BUILD_SERVER: "null"
+    DD_ENGAGEMENT_SOURCE_CODE_MANAGEMENT_SERVER: "null"
+    DD_ENGAGEMENT_ORCHESTRATION_ENGINE: "null"
+    DD_ENGAGEMENT_DEDUPLICATION_ON_ENGAGEMENT: "false"
+    DD_ENGAGEMENT_THREAT_MODEL: "true"
+    DD_ENGAGEMENT_API_TEST: "true"
+    DD_ENGAGEMENT_PEN_TEST: "true"
+    DD_ENGAGEMENT_CHECK_LIST: "true"
+  rules:
+    - if: '$DD_NOT_ON_MASTER == "true" && $CI_COMMIT_BRANCH == "master"'
+      when: never
+    - when: always
+  before_script:
+    - apk add --no-cache curl jq coreutils
+  script:
+    - sh .gitlab-ci/defectdojo-engagement.sh 
+  artifacts:
+    reports:
+      dotenv: defectdojo.env
+
+.dependencies_cache:
+  cache:
+    key: $CI_PROJECT_NAME-osdo
+    paths:
+      - .npm/
+      - node_modules/
+      - public/build/
+      - vendor/
+
+composer:
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:39497466a1165e1ad85d974fec4332bce2ae9de2275c93c449341526dd43a2fc
+  stage: preparation
+  script:
+      - composer install --prefer-dist --no-ansi --no-interaction --no-progress --no-scripts
+  extends: .dependencies_cache
+
+
+npm:
+  image: node:20-alpine
+  stage: preparation
+  needs:
+    - composer
+  extends: .dependencies_cache
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npm run build
+
+
+
+secret_detection:
+  stage: secret_detection
+  dependencies: ["defectdojo_create_engagement"]
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 1
+    DD_SCAN_TYPE: "Gitleaks Scan"
+    DD_PRODUCT_NAME: "GitLeaks"
+    DD_SCAN_FILE: "gitleaks-report.json"
+    DD_SCAN_ACTIVE: "true"
+    DD_SCAN_VERIFIED: "false"
+  image: 
+    name: harbor.opensecdevops.com/osdo/gitleak@sha256:3bed0f5591a4e49c810a93f571839b0973c325e0e465170e4312e7b539e5afc2
+    entrypoint: [""]
+  script:
+    - gitleaks detect -v --source=$PWD  --report-path=gitleaks-report.json
+  after_script:
+    - |
+      if [ $CI_JOB_STATUS == 'failed' ]; then
+        bash .gitlab-ci/defectdojo-finding.sh
+      fi
+  allow_failure: true
+  artifacts:
+    when: on_failure
+    paths:
+      - gitleaks-report.json
+
+sbom_scan_php:
+  stage: sbom_scan
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:39497466a1165e1ad85d974fec4332bce2ae9de2275c93c449341526dd43a2fc
+  dependencies: ['composer']
+  variables:
+    COMPOSER_ALLOW_SUPERUSER: 1
+  extends: .dependencies_cache
+  script:
+    - composer CycloneDX:make-sbom --output-file=sbom.json --output-format=json
+    - sh .gitlab-ci/dependency-track.sh 
+  allow_failure: true
+  artifacts:
+    expire_in: 1 days
+    paths:
+      - sbom.json
+    reports:
+      cyclonedx: sbom.json
+
+sbom_scan_node:
+  stage: sbom_scan
+  image: harbor.opensecdevops.com/osdo/cyclonedx-npm@sha256:3cf682b33f38540d7c75b0438918d7d690b4b03f23d98f9e2c3bed85172cae97
+  dependencies: ['npm']
+  extends: .dependencies_cache
+  script:
+    - cyclonedx-npm --output-file sbom.json --omit dev --short-PURLs
+    - sh .gitlab-ci/dependency-track.sh 
+  allow_failure: true
+  artifacts:
+    expire_in: 1 days
+    paths:
+      - sbom.json
+    reports:
+      cyclonedx: sbom.json
+
+
+phpunit:
+  stage: test
+  image: harbor.opensecdevops.com/osdo/php-ci@sha256:39497466a1165e1ad85d974fec4332bce2ae9de2275c93c449341526dd43a2fc
+  dependencies: ['composer', 'npm']
+  variables:
+    XDEBUG_MODE: coverage
+  extends: .dependencies_cache
+  before_script:
+    - php artisan key:generate --env=testing
+  script:
+    - ./vendor/bin/phpunit --coverage-text --colors=never --log-junit phpunit-report.xml --coverage-clover coverage-report.xml
+  artifacts:
+    paths:
+      - phpunit-report.xml
+      - coverage-report.xml
+    reports:
+      junit: phpunit-report.xml
+    expire_in: 30 min
+  allow_failure: true
+
+
+sonarqube-check:
+  stage: test
+  dependencies: ['phpunit']
+  image: 
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+    - sonar-scanner
+  allow_failure: true
+
+docker_hadolit:
+  stage: build_test
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  dependencies: ["defectdojo_create_engagement"]
+  variables:
+    DD_SCAN_TYPE: "Hadolint Dockerfile check"
+    DD_PRODUCT_NAME: "Hadolint"
+    DD_SCAN_FILE: "hadolit.json"
+    DD_SCAN_ACTIVE: "true"
+    DD_SCAN_VERIFIED: "false"
+  image:  harbor.opensecdevops.com/osdo/hadolint@sha256:837ce008d9fe6577f9170b99ebbd5a65265a6ff3570ebea7847d2b85e498e767
+  script:
+    - hadolint "${CI_PROJECT_DIR}/Dockerfile" -f json > hadolit.json
+  after_script:
+    - bash .gitlab-ci/defectdojo-finding.sh
+     
+  allow_failure: true
+  artifacts:
+    paths:
+      - hadolit.json
+    when: always
+    expire_in: 1 hour
+
+
+docker_build:
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  dependencies: ['composer', 'npm']
+  extends: .dependencies_cache
+  image:
+    name: gcr.io/kaniko-project/executor:v1.14.0-debug
+    entrypoint: [""]
+  script:
+    - mkdir tar_images
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${DOCKER_REGISTRY_URL}/osdo/osdo-app:${CI_COMMIT_TAG}" --no-push --tar-path tar_images/osdo_app.tar
+  artifacts:
+    paths:
+      - tar_images
+    when: on_success
+
+
+docker_scan:
+  stage: build_test
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  dependencies: ["docker_build", "defectdojo_create_engagement"]
+  variables:
+    DD_SCAN_TYPE: "Trivy Scan"
+    DD_PRODUCT_NAME: "Trivy"
+    DD_SCAN_ACTIVE: "true"
+    DD_SCAN_VERIFIED: "false"
+  image:
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
+  before_script:
+    apk add --no-cache bash curl
+  script:
+    - mkdir -p scan_result
+    - cd tar_images
+    - |
+      for tar_image in *.tar; 
+      do
+        [ -e "$tar_image" ] || continue;
+        file_name=${tar_image%.*};
+        trivy image --timeout 15m --offline-scan --input $tar_image -f json -o ../scan_result/$file_name.json; 
+      done
+    - >
+      cd ../scan_result
+      vulns=false;
+      for result in *.json;
+      do
+        [ -e "$result" ] || continue;
+        file_name=${result%.*};
+        vulnerabilities=$(awk -F '[:,]' '/"Vulnerabilities"/ {gsub("[[:blank:]]+", "", $2); print $2}' "$file_name.json");
+        if ! [ -z "$vulnerabilities" ]; then 
+          vulns=true;
+          DD_SCAN_FILE="${CI_PROJECT_DIR}/scan_result/${file_name}.json";
+          export DD_SCAN_FILE;
+          bash ${CI_PROJECT_DIR}/.gitlab-ci/defectdojo-finding.sh > ${CI_PROJECT_DIR}/scan_result/log.txt
+        fi
+      done
+
+     
+  artifacts:
+    paths:
+      - scan_result
+    expire_in: 1 month
+
+docker_push:
+  stage: push_image
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  dependencies: ["docker_build"]
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  script:
+    - cd tar_images
+    - |
+      for tar_image in *.tar; 
+      do 
+        crane auth login -u $DOCKER_REGISTRY_USER -p $DOCKER_REGISTRY_PASS $DOCKER_REGISTRY_URL;
+        crane push $tar_image $DOCKER_REGISTRY_URL/osdo/osdo-app:$CI_COMMIT_SHORT_SHA -v;
+        DIGEST=$(crane digest $DOCKER_REGISTRY_URL/osdo/osdo-app:$CI_COMMIT_SHORT_SHA);
+        echo "DIGEST=${DIGEST}" >> digest.env
+      done
+  artifacts:
+    reports:
+      dotenv: tar_images/digest.env
+    expire_in: 10 min
+
+docker_sign:
+  stage: sign_image
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  dependencies: ["docker_push"]
+  variables:
+    GIT_STRATEGY: none
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  image: docker:24.0.7
+  services:
+    - docker:24.0.7-dind
+  before_script:
+    - apk add --update --no-cache cosign curl bash expect
+    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+  script:
+    - echo "$DOCKER_REGISTRY_PASS" | docker login -u "$DOCKER_REGISTRY_USER" --password-stdin $DOCKER_REGISTRY_URL
+    - cosign sign --key .secure_files/cosign.key -y $DOCKER_REGISTRY_URL/osdo/osdo-app@${DIGEST}
+
+update_manifest:
+  stage: update_k8s_manifest
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  dependencies:
+    - "docker_push"
+  image:
+    name: ubuntu:22.04
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - apt update -y && apt install curl grep original-awk -y
+    - curl -s https://gitlab.com/gitlab-org/incubation-engineering/mobile-devops/download-secure-files/-/raw/main/installer | bash
+    - SSH_PRIVATE_KEY=$(cat .secure_files/osdomanifest);
+    - 'which ssh-agent || ( apt-get install openssh-client git -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - git config --global user.email "hello@opensecdevops.com"
+    - git config --global user.name "osdo"
+  script:
+    - git clone git@gitlab.com:opensecdevops/manifests.git
+    - cd manifests
+    - echo $DIGEST
+    - ls -ll
+    - >
+      IMAGE=$(cat k8s/deployment.yaml | grep -m 1 image: | awk '{print $2}' | sed 's/\//\\\//g')
+    - sed -i "s/${IMAGE}/harbor.opensecdevops.com\/osdo\/osdo-app@${DIGEST}/g" k8s/deployment.yaml
+    - git add k8s/deployment.yaml
+    - git commit -m "Update deployment image to version ${DIGEST}"
+    - git push --force git@gitlab.com:opensecdevops/manifests.git HEAD:main
+
+
+
+
+
+

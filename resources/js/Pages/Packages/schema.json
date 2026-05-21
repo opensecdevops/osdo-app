@@ -1,0 +1,199 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "version": {
+            "type": "string"
+        },
+        "description": {
+            "type": [
+                "string"
+            ]
+        },
+        "homepage": {
+            "type": [
+                "string"
+            ]
+        },
+        "repository": {
+            "type": [
+                "string"
+            ]
+        },
+        "type": {
+            "type": "string",
+            "enum": [
+                "pipeline",
+                "infrastructure"
+            ]
+        },
+        "license": {
+            "type": "string"
+        },
+        "author": {
+            "type": "string"
+        },
+        "template": {
+            "type": "string"
+        },
+        "file": {
+            "type": "string"
+        },
+        "language": {
+            "type": "string"
+        },
+        "blocks": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "template": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "enabled": {
+                        "type": "boolean"
+                    },
+                    "dependencies": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "fields": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                },
+                                "rules": {
+                                    "type": "string"
+                                },
+                                "default": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        },
+                                        {
+                                            "type": "number"
+                                        }
+                                    ]
+                                },
+                                "info": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                },
+                                "options": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "number"
+                                            },
+                                            "label": {
+                                                "type": "string"
+                                            },
+                                            "value": {
+                                                "type": "string"
+                                            },
+                                            "dependencies": {
+                                                "type": "array",
+                                                "minItems": 1,
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "required": [
+                                            "id",
+                                            "label",
+                                            "value"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "type",
+                                "name",
+                                "label"
+                            ]
+                        }
+                    },
+                    "extra": {
+                        "type": "array",
+                        "minItems": 0,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "language": {
+                                    "type": "string"
+                                },
+                                "file": {
+                                    "type": "string"
+                                },
+                                "route": {
+                                    "type": "string"
+                                },
+                                "template": {
+                                    "type": "string"
+                                },
+                                "dependencies": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "required": [
+                                "language",
+                                "file",
+                                "template"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "template",
+                    "name",
+                    "fields"
+                ]
+            }
+        }
+    },
+    "required": [
+        "name",
+        "version",
+        "type",
+        "blocks"
+    ]
+}
